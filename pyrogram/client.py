@@ -18,6 +18,7 @@
 
 import asyncio
 import functools
+import inspect
 import logging
 import os
 import re
@@ -58,7 +59,7 @@ class Client(Methods, Scaffold):
         session_name (``str``):
             Pass a string of your choice to give a name to the client session, e.g.: "*my_account*". This name will be
             used to save a file on disk that stores details needed to reconnect without asking again for credentials.
-            Alternatively, if you don't want a file to be saved on disk, pass the special name "**:memory:**" to start
+            Alternatively, if you don't want a file to be saved on disk, pass the special name ``":memory:"`` to start
             an in-memory session that will be discarded as soon as you stop the Client. In order to reconnect again
             using a memory storage without having to login again, you can use
             :meth:`~pyrogram.Client.export_session_string` before stopping the client to get a session string you can
@@ -1025,7 +1026,7 @@ class Client(Methods, Scaffold):
                             offset += limit
 
                             if progress:
-                                if asyncio.iscoroutinefunction(progress):
+                                if inspect.iscoroutinefunction(progress):
                                     await progress(
                                         min(offset, file_size) if file_size != 0 else offset,
                                         file_size,

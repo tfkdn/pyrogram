@@ -18,6 +18,7 @@
 
 import asyncio
 import functools
+import inspect
 import io
 import logging
 import math
@@ -101,7 +102,7 @@ class SaveFile(Scaffold):
                     return
 
                 try:
-                    await asyncio.ensure_future(session.send(data))
+                    await self.loop.create_task(session.send(data))
                 except Exception as e:
                     log.error(e)
 
@@ -139,7 +140,7 @@ class SaveFile(Scaffold):
                 await self.storage.test_mode(), is_media=True
             ) for _ in range(pool_size)
         ]
-        workers = [asyncio.ensure_future(worker(session)) for session in pool for _ in range(workers_count)]
+        workers = [self.loop.create_task(worker(session)) for session in pool for _ in range(workers_count)]
         queue = asyncio.Queue(16)
 
         try:
@@ -182,7 +183,7 @@ class SaveFile(Scaffold):
                     file_part += 1
 
                     if progress:
-                        if asyncio.iscoroutinefunction(progress):
+                        if inspect.iscoroutinefunction(progress):
                             await progress(min(file_part * part_size, file_size), file_size, *progress_args)
                         else:
                             func = functools.partial(

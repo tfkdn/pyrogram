@@ -70,6 +70,10 @@ class AndFilter(Filter):
                 client, update
             )
 
+        # short circuit
+        if not x:
+            return False
+
         if inspect.iscoroutinefunction(self.other.__call__):
             y = await self.other(client, update)
         else:
@@ -96,6 +100,10 @@ class OrFilter(Filter):
                 self.base,
                 client, update
             )
+
+        # short circuit
+        if x:
+            return True
 
         if inspect.iscoroutinefunction(self.other.__call__):
             y = await self.other(client, update)
@@ -773,8 +781,8 @@ def regex(pattern: Union[str, Pattern], flags: int = 0):
     stored in the ``matches`` field of the update object itself.
 
     Parameters:
-            pattern (``str`` | ``Pattern``):
-                The regex pattern as string or as pre-compiled pattern.
+        pattern (``str`` | ``Pattern``):
+            The regex pattern as string or as pre-compiled pattern.
 
         flags (``int``, *optional*):
             Regex flags.
