@@ -17,6 +17,7 @@
 # along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
 from .add_handler import AddHandler
+from .add_middleware import AddMiddleware
 from .export_session_string import ExportSessionString
 from .remove_handler import RemoveHandler
 from .restart import Restart
@@ -28,6 +29,7 @@ from .stop_transmission import StopTransmission
 
 class Utilities(
     AddHandler,
+    AddMiddleware,
     ExportSessionString,
     RemoveHandler,
     Restart,
