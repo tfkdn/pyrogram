@@ -107,8 +107,8 @@ class DownloadMedia(Scaffold):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             ``str`` | ``None``: On success, the absolute path of the downloaded file is returned, otherwise, in case
@@ -134,7 +134,7 @@ class DownloadMedia(Scaffold):
                 app.download_media(message, progress=progress)
         """
         error_message = "This message doesn't contain any downloadable media"
-        available_media = ("audio", "document", "photo", "sticker", "animation", "video", "voice", "video_note")
+        available_media = ("audio", "document", "photo", "sticker", "animation", "video", "voice", "video_note", "new_chat_photo")
 
         media_file_name = None
         file_size = None

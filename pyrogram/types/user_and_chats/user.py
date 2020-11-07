@@ -138,6 +138,12 @@ class User(Object, Update):
         restrictions (List of :obj:`~pyrogram.types.Restriction`, *optional*):
             The list of reasons why this bot might be unavailable to some users.
             This field is available only in case *is_restricted* is True.
+
+        mention (``str``, *property*):
+            Generate a text mention for this user.
+            You can use ``user.mention()`` to mention the user using their first name (styled using html), or
+            ``user.mention("another name")`` for a custom name. To choose a different style
+            ("html" or "md"/"markdown") use ``user.mention(style="md")``.
     """
 
     def __init__(

@@ -167,8 +167,17 @@ async def parse_messages(client, messages: "raw.types.messages.Messages", replie
         reply_message_ids = [i[0] for i in filter(lambda x: x[1] is not None, messages_with_replies.items())]
 
         if reply_message_ids:
+            # We need a chat id, but some messages might be empty (no chat attribute available)
+            # Scan until we find a message with a chat available (there must be one, because we are fetching replies)
+            for m in parsed_messages:
+                if m.chat:
+                    chat_id = m.chat.id
+                    break
+            else:
+                chat_id = 0
+
             reply_messages = await client.get_messages(
-                parsed_messages[0].chat.id,
+                chat_id,
                 reply_to_message_ids=reply_message_ids,
                 replies=replies - 1
             )
@@ -222,7 +231,22 @@ MIN_CHAT_ID = -2147483647
 MAX_USER_ID = 2147483647
 
 
+def get_raw_peer_id(peer: raw.base.Peer) -> Union[int, None]:
+    """Get the raw peer id from a Peer object"""
+    if isinstance(peer, raw.types.PeerUser):
+        return peer.user_id
+
+    if isinstance(peer, raw.types.PeerChat):
+        return peer.chat_id
+
+    if isinstance(peer, raw.types.PeerChannel):
+        return peer.channel_id
+
+    return None
+
+
 def get_peer_id(peer: raw.base.Peer) -> int:
+    """Get the non-raw peer id from a Peer object"""
     if isinstance(peer, raw.types.PeerUser):
         return peer.user_id
 

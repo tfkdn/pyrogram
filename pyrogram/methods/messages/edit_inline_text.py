@@ -76,7 +76,7 @@ class EditInlineText(Scaffold):
         unpacked = utils.unpack_inline_message_id(inline_message_id)
         dc_id = unpacked.dc_id
 
-        session = get_session(self, dc_id)
+        session = await get_session(self, dc_id)
 
         return await session.send(
             raw.functions.messages.EditInlineBotMessage(
@@ -84,5 +84,6 @@ class EditInlineText(Scaffold):
                 no_webpage=disable_web_page_preview or None,
                 reply_markup=reply_markup.write() if reply_markup else None,
                 **await self.parser.parse(text, parse_mode)
-            )
+            ),
+            sleep_threshold=self.sleep_threshold
         )

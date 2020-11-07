@@ -165,7 +165,12 @@ class Client(Methods, Scaffold):
             Set a sleep threshold for flood wait exceptions happening globally in this client instance, below which any
             request that raises a flood wait will be automatically invoked again after sleeping for the required amount
             of time. Flood wait exceptions requiring higher waiting times will be raised.
-            Defaults to 60 (seconds).
+            Defaults to 10 seconds.
+
+        hide_password (``bool``, *optional*):
+            Pass True to hide the password when typing it during the login.
+            Defaults to False, because ``getpass`` (the library used) is known to be problematic in some
+            terminal environments.
     """
 
     def __init__(
@@ -192,7 +197,8 @@ class Client(Methods, Scaffold):
         parse_mode: str = Scaffold.PARSE_MODES[0],
         no_updates: bool = None,
         takeout: bool = None,
-        sleep_threshold: int = Session.SLEEP_THRESHOLD
+        sleep_threshold: int = Session.SLEEP_THRESHOLD,
+        hide_password: bool = False
     ):
         super().__init__()
 
@@ -220,6 +226,7 @@ class Client(Methods, Scaffold):
         self.no_updates = no_updates
         self.takeout = takeout
         self.sleep_threshold = sleep_threshold
+        self.hide_password = hide_password
 
         self.executor = ThreadPoolExecutor(self.workers, thread_name_prefix="Handler")
 
@@ -328,7 +335,7 @@ class Client(Methods, Scaffold):
                     print("Password hint: {}".format(await self.get_password_hint()))
 
                     if not self.password:
-                        self.password = await ainput("Enter password (empty to recover): ", hide=True)
+                        self.password = await ainput("Enter password (empty to recover): ", hide=self.hide_password)
 
                     try:
                         if not self.password:
@@ -532,7 +539,7 @@ class Client(Methods, Scaffold):
                     getattr(
                         getattr(
                             update, "message", None
-                        ), "to_id", None
+                        ), "peer_id", None
                     ), "channel_id", None
                 ) or getattr(update, "channel_id", None)
 
@@ -923,7 +930,8 @@ class Client(Methods, Scaffold):
                     location=location,
                     offset=offset,
                     limit=limit
-                )
+                ),
+                sleep_threshold=30
             )
 
             if isinstance(r, raw.types.upload.File):
@@ -941,7 +949,8 @@ class Client(Methods, Scaffold):
                         offset += limit
 
                         if progress:
-                            await progress(
+                            func = functools.partial(
+                                progress,
                                 min(offset, file_size)
                                 if file_size != 0
                                 else offset,
@@ -949,12 +958,18 @@ class Client(Methods, Scaffold):
                                 *progress_args
                             )
 
+                            if inspect.iscoroutinefunction(progress):
+                                await func()
+                            else:
+                                await self.loop.run_in_executor(self.executor, func)
+
                         r = await session.send(
                             raw.functions.upload.GetFile(
                                 location=location,
                                 offset=offset,
                                 limit=limit
-                            )
+                            ),
+                            sleep_threshold=30
                         )
 
             elif isinstance(r, raw.types.upload.FileCdnRedirect):
@@ -1026,20 +1041,16 @@ class Client(Methods, Scaffold):
                             offset += limit
 
                             if progress:
-                                if inspect.iscoroutinefunction(progress):
-                                    await progress(
-                                        min(offset, file_size) if file_size != 0 else offset,
-                                        file_size,
-                                        *progress_args
-                                    )
-                                else:
-                                    func = functools.partial(
-                                        progress,
-                                        min(offset, file_size) if file_size != 0 else offset,
-                                        file_size,
-                                        *progress_args
-                                    )
+                                func = functools.partial(
+                                    progress,
+                                    min(offset, file_size) if file_size != 0 else offset,
+                                    file_size,
+                                    *progress_args
+                                )
 
+                                if inspect.iscoroutinefunction(progress):
+                                    await func()
+                                else:
                                     await self.loop.run_in_executor(self.executor, func)
 
                             if len(chunk) < limit:

@@ -66,7 +66,10 @@ class GetDialogs(Scaffold):
         """
 
         if pinned_only:
-            r = await self.send(raw.functions.messages.GetPinnedDialogs(folder_id=0))
+            r = await self.send(
+                raw.functions.messages.GetPinnedDialogs(folder_id=0),
+                sleep_threshold=60
+            )
         else:
             r = await self.send(
                 raw.functions.messages.GetDialogs(
@@ -76,7 +79,8 @@ class GetDialogs(Scaffold):
                     limit=limit,
                     hash=0,
                     exclude_pinned=True
-                )
+                ),
+                sleep_threshold=60
             )
 
         users = {i.id: i for i in r.users}
@@ -85,15 +89,15 @@ class GetDialogs(Scaffold):
         messages = {}
 
         for message in r.messages:
-            to_id = message.to_id
+            peer_id = message.peer_id
 
-            if isinstance(to_id, raw.types.PeerUser):
+            if isinstance(peer_id, raw.types.PeerUser):
                 if message.out:
-                    chat_id = to_id.user_id
+                    chat_id = peer_id.user_id
                 else:
-                    chat_id = message.from_id
+                    chat_id = utils.get_raw_peer_id(message.from_id)
             else:
-                chat_id = utils.get_peer_id(to_id)
+                chat_id = utils.get_peer_id(peer_id)
 
             messages[chat_id] = await types.Message._parse(self, message, users, chats)
 

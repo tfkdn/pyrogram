@@ -16,6 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from functools import partial
 from typing import List, Match, Union, BinaryIO
 
@@ -27,6 +28,8 @@ from pyrogram.errors import MessageIdsEmpty
 from pyrogram.parser import utils as parser_utils, Parser
 from ..object import Object
 from ..update import Update
+
+log = logging.getLogger(__name__)
 
 
 class Str(str):
@@ -245,9 +248,6 @@ class Message(Object, Update):
             Messages sent from yourself to other chats are outgoing (*outgoing* is True).
             An exception is made for your own personal chat; messages sent there will be incoming.
 
-        link (``str``):
-            A link to the message, only for groups and channels.
-
         matches (List of regex Matches, *optional*):
             A list containing all `Match Objects <https://docs.python.org/3/library/re.html#match-objects>`_ that match
             the text of this message. Only applicable when using :obj:`Filters.regex <pyrogram.Filters.regex>`.
@@ -260,6 +260,9 @@ class Message(Object, Update):
         reply_markup (:obj:`~pyrogram.types.InlineKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardRemove` | :obj:`~pyrogram.types.ForceReply`, *optional*):
             Additional interface options. An object for an inline keyboard, custom reply keyboard,
             instructions to remove reply keyboard or to force a reply from the user.
+
+        link (``str``, *property*):
+            Generate a link to this message, only for groups and channels.
     """
 
     # TODO: Add game missing field. Also invoice, successful_payment, connected_website
@@ -419,7 +422,7 @@ class Message(Object, Update):
             if isinstance(action, raw.types.MessageActionChatAddUser):
                 new_chat_members = [types.User._parse(client, users[i]) for i in action.users]
             elif isinstance(action, raw.types.MessageActionChatJoinedByLink):
-                new_chat_members = [types.User._parse(client, users[message.from_id])]
+                new_chat_members = [types.User._parse(client, users[utils.get_raw_peer_id(message.from_id)])]
             elif isinstance(action, raw.types.MessageActionChatDeleteUser):
                 left_chat_member = types.User._parse(client, users[action.user_id])
             elif isinstance(action, raw.types.MessageActionChatEditTitle):
@@ -441,7 +444,7 @@ class Message(Object, Update):
                 message_id=message.id,
                 date=message.date,
                 chat=types.Chat._parse(client, message, users, chats),
-                from_user=types.User._parse(client, users.get(message.from_id, None)),
+                from_user=types.User._parse(client, users.get(utils.get_raw_peer_id(message.from_id), None)),
                 service=True,
                 new_chat_members=new_chat_members,
                 left_chat_member=left_chat_member,
@@ -469,7 +472,7 @@ class Message(Object, Update):
             if isinstance(action, raw.types.MessageActionGameScore):
                 parsed_message.game_high_score = types.GameHighScore._parse_action(client, message, users)
 
-                if message.reply_to_msg_id and replies:
+                if message.reply_to and replies:
                     try:
                         parsed_message.reply_to_message = await client.get_messages(
                             parsed_message.chat.id,
@@ -498,13 +501,17 @@ class Message(Object, Update):
                 forward_date = forward_header.date
 
                 if forward_header.from_id:
-                    forward_from = types.User._parse(client, users[forward_header.from_id])
+                    raw_peer_id = utils.get_raw_peer_id(forward_header.from_id)
+                    peer_id = utils.get_peer_id(forward_header.from_id)
+
+                    if peer_id > 0:
+                        forward_from = types.User._parse(client, users[raw_peer_id])
+                    else:
+                        forward_from_chat = types.Chat._parse_channel_chat(client, chats[raw_peer_id])
+                        forward_from_message_id = forward_header.channel_post
+                        forward_signature = forward_header.post_author
                 elif forward_header.from_name:
                     forward_sender_name = forward_header.from_name
-                else:
-                    forward_from_chat = types.Chat._parse_channel_chat(client, chats[forward_header.channel_id])
-                    forward_from_message_id = forward_header.channel_post
-                    forward_signature = forward_header.post_author
 
             photo = None
             location = None
@@ -605,7 +612,7 @@ class Message(Object, Update):
                 message_id=message.id,
                 date=message.date,
                 chat=types.Chat._parse(client, message, users, chats),
-                from_user=types.User._parse(client, users.get(message.from_id, None)),
+                from_user=types.User._parse(client, users.get(utils.get_raw_peer_id(message.from_id), None)),
                 text=(
                     Str(message.message).init(entities) or None
                     if media is None or web_page is not None
@@ -661,7 +668,7 @@ class Message(Object, Update):
                 client=client
             )
 
-            if message.reply_to_msg_id and replies:
+            if message.reply_to and replies:
                 try:
                     parsed_message.reply_to_message = await client.get_messages(
                         parsed_message.chat.id,
@@ -870,8 +877,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the sent :obj:`~pyrogram.types.Message` is returned.
@@ -1013,8 +1020,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the sent :obj:`~pyrogram.types.Message` is returned.
@@ -1357,8 +1364,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the sent :obj:`~pyrogram.types.Message` is returned.
@@ -1758,8 +1765,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the sent :obj:`~pyrogram.types.Message` is returned.
@@ -1794,8 +1801,13 @@ class Message(Object, Update):
         question: str,
         options: List[str],
         quote: bool = None,
+        is_anonymous: bool = True,
+        allows_multiple_answers: bool = None,
+        type: str = "regular",
+        correct_option_id: int = None,
         disable_notification: bool = None,
         reply_to_message_id: int = None,
+        schedule_date: int = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
             "types.ReplyKeyboardMarkup",
@@ -1831,6 +1843,22 @@ class Message(Object, Update):
                 If ``True``, the message will be sent as a reply to this message.
                 If *reply_to_message_id* is passed, this parameter will be ignored.
                 Defaults to ``True`` in group chats and ``False`` in private chats.
+            
+            is_anonymous (``bool``, *optional*):
+                True, if the poll needs to be anonymous.
+                Defaults to True.
+
+            type (``str``, *optional*):
+                Poll type, "quiz" or "regular".
+                Defaults to "regular"
+
+            allows_multiple_answers (``bool``, *optional*):
+                True, if the poll allows multiple answers, ignored for polls in quiz mode.
+                Defaults to False
+            
+            correct_option_id (``int``, *optional*):
+                0-based identifier of the correct answer option (the index of the correct option)
+                Required for polls in quiz mode.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.
@@ -1838,6 +1866,9 @@ class Message(Object, Update):
 
             reply_to_message_id (``int``, *optional*):
                 If the message is a reply, ID of the original message.
+            
+            schedule_date (``int``, *optional*):
+                Date when the message will be automatically sent. Unix time.
 
             reply_markup (:obj:`~pyrogram.types.InlineKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardRemove` | :obj:`~pyrogram.types.ForceReply`, *optional*):
                 Additional interface options. An object for an inline keyboard, custom reply keyboard,
@@ -1859,8 +1890,13 @@ class Message(Object, Update):
             chat_id=self.chat.id,
             question=question,
             options=options,
+            is_anonymous=is_anonymous,
+            allows_multiple_answers=allows_multiple_answers,
+            type=type,
+            correct_option_id=correct_option_id,
             disable_notification=disable_notification,
             reply_to_message_id=reply_to_message_id,
+            schedule_date=schedule_date,
             reply_markup=reply_markup
         )
 
@@ -1942,8 +1978,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the sent :obj:`~pyrogram.types.Message` is returned.
@@ -2181,8 +2217,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the sent :obj:`~pyrogram.types.Message` is returned.
@@ -2309,8 +2345,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the sent :obj:`~pyrogram.types.Message` is returned.
@@ -2434,8 +2470,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the sent :obj:`~pyrogram.types.Message` is returned.
@@ -2706,12 +2742,12 @@ class Message(Object, Update):
         """
         if as_copy:
             if self.service:
-                raise ValueError("Unable to copy service messages")
-
-            if self.game and not await self._client.storage.is_bot():
-                raise ValueError("Users cannot send messages with Game media type")
-
-            if self.text:
+                log.warning(f"Service messages cannot be copied. "
+                            f"chat_id: {self.chat.id}, message_id: {self.message_id}")
+            elif self.game and not await self._client.storage.is_bot():
+                log.warning(f"Users cannot send messages with Game media type. "
+                            f"chat_id: {self.chat.id}, message_id: {self.message_id}")
+            elif self.text:
                 return await self._client.send_message(
                     chat_id,
                     text=self.text.html,
@@ -3054,8 +3090,8 @@ class Message(Object, Update):
                 The total size of the file.
 
             *args (``tuple``, *optional*):
-                Extra custom arguments as defined in the *progress_args* parameter.
-                You can either keep *\*args* or add every single extra argument in your function signature.
+                Extra custom arguments as defined in the ``progress_args`` parameter.
+                You can either keep ``*args`` or add every single extra argument in your function signature.
 
         Returns:
             On success, the absolute path of the downloaded file as string is returned, None otherwise.
@@ -3110,7 +3146,7 @@ class Message(Object, Update):
             options=option
         )
 
-    async def pin(self, disable_notification: bool = None) -> bool:
+    async def pin(self, disable_notification: bool = False, both_sides: bool = False) -> bool:
         """Bound method *pin* of :obj:`~pyrogram.types.Message`.
 
         Use as a shortcut for:
@@ -3132,6 +3168,10 @@ class Message(Object, Update):
                 Pass True, if it is not necessary to send a notification to all chat members about the new pinned
                 message. Notifications are always disabled in channels.
 
+            both_sides (``bool``, *optional*):
+                Pass True to pin the message for both sides (you and recipient).
+                Applicable to private chats only. Defaults to False.
+
         Returns:
             True on success.
 
@@ -3141,5 +3181,34 @@ class Message(Object, Update):
         return await self._client.pin_chat_message(
             chat_id=self.chat.id,
             message_id=self.message_id,
-            disable_notification=disable_notification
+            disable_notification=disable_notification,
+            both_sides=both_sides
+        )
+
+    async def unpin(self) -> bool:
+        """Bound method *unpin* of :obj:`~pyrogram.types.Message`.
+
+        Use as a shortcut for:
+
+        .. code-block:: python
+
+            client.unpin_chat_message(
+                chat_id=message.chat.id,
+                message_id=message_id
+            )
+
+        Example:
+            .. code-block:: python
+
+                message.unpin()
+
+        Returns:
+            True on success.
+
+        Raises:
+            RPCError: In case of a Telegram RPC error.
+        """
+        return await self._client.pin_chat_message(
+            chat_id=self.chat.id,
+            message_id=self.message_id
         )

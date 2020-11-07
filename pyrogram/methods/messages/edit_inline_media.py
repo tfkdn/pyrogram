@@ -54,7 +54,7 @@ class EditInlineMedia(Scaffold):
         Example:
             .. code-block:: python
 
-                from pyrogram import InputMediaPhoto, InputMediaVideo, InputMediaAudio
+                from pyrogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAudio
 
                 # Bots only
 
@@ -109,7 +109,7 @@ class EditInlineMedia(Scaffold):
         unpacked = utils.unpack_inline_message_id(inline_message_id)
         dc_id = unpacked.dc_id
 
-        session = get_session(self, dc_id)
+        session = await get_session(self, dc_id)
 
         return await session.send(
             raw.functions.messages.EditInlineBotMessage(
@@ -117,5 +117,6 @@ class EditInlineMedia(Scaffold):
                 media=media,
                 reply_markup=reply_markup.write() if reply_markup else None,
                 **await self.parser.parse(caption, parse_mode)
-            )
+            ),
+            sleep_threshold=self.sleep_threshold
         )

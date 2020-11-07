@@ -44,7 +44,7 @@ class EditInlineReplyMarkup(Scaffold):
         Example:
             .. code-block:: python
 
-                from pyrogram import InlineKeyboardMarkup, InlineKeyboardButton
+                from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
                 # Bots only
                 app.edit_inline_reply_markup(
@@ -56,11 +56,12 @@ class EditInlineReplyMarkup(Scaffold):
         unpacked = utils.unpack_inline_message_id(inline_message_id)
         dc_id = unpacked.dc_id
 
-        session = get_session(self, dc_id)
+        session = await get_session(self, dc_id)
 
         return await session.send(
             raw.functions.messages.EditInlineBotMessage(
                 id=unpacked,
                 reply_markup=reply_markup.write() if reply_markup else None,
-            )
+            ),
+            sleep_threshold=self.sleep_threshold
         )
