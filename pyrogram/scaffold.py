@@ -229,3 +229,6 @@ class Scaffold:
 
     def remove_middleware(self, *args, **kwargs):
         pass
+
+    async def run_in_executor(self, func: callable, *args, **kwargs):
+        raise NotImplementedError

@@ -228,8 +228,7 @@ class Session:
                 self.auth_key_id
             )
         else:
-            data = await self.loop.run_in_executor(
-                self.executor,
+            data = await self.run_in_executor(
                 mtproto.unpack,
                 BytesIO(packet),
                 self.session_id,
@@ -378,8 +377,7 @@ class Session:
                 self.auth_key_id
             )
         else:
-            payload = await self.loop.run_in_executor(
-                self.executor,
+            payload = await self.run_in_executor(
                 mtproto.pack,
                 message,
                 self.current_salt.salt,
@@ -458,3 +456,6 @@ class Session:
                 await asyncio.sleep(0.5)
 
                 return await self.send(data, retries - 1, timeout)
+
+    async def run_in_executor(self, func: callable, *args):
+        await self.loop.run_in_executor(self.executor, func, *args)
