@@ -143,9 +143,6 @@ class Scaffold:
     def add_handler(self, *args, **kwargs):
         pass
 
-    def add_middleware(self, *args, **kwargs):
-        pass
-
     async def save_file(self, *args, **kwargs):
         pass
 
@@ -225,4 +222,10 @@ class Scaffold:
         pass
 
     async def terminate(self, *args, **kwargs):
+        pass
+
+    def add_middleware(self, *args, **kwargs):
+        pass
+
+    def remove_middleware(self, *args, **kwargs):
         pass

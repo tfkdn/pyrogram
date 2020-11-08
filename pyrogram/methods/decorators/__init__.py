@@ -16,6 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
+from .middleware import Middleware
 from .on_callback_query import OnCallbackQuery
 from .on_chosen_inline_result import OnChosenInlineResult
 from .on_deleted_messages import OnDeletedMessages
@@ -28,6 +29,7 @@ from .on_user_status import OnUserStatus
 
 
 class Decorators(
+    Middleware,
     OnMessage,
     OnDeletedMessages,
     OnCallbackQuery,
