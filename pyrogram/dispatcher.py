@@ -17,6 +17,7 @@
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
 import asyncio
+import inspect
 import logging
 from collections import OrderedDict
 from functools import partial, update_wrapper
@@ -25,30 +26,18 @@ from typing import Iterable, Iterator, List
 import pyrogram
 from pyrogram import utils
 from pyrogram.handlers import (
-    CallbackQueryHandler,
-    ChosenInlineResultHandler,
-    DeletedMessagesHandler,
-    InlineQueryHandler,
-    MessageHandler,
-    PollHandler,
-    RawUpdateHandler,
-    UserStatusHandler,
+    CallbackQueryHandler, MessageHandler, DeletedMessagesHandler,
+    UserStatusHandler, RawUpdateHandler, InlineQueryHandler, PollHandler,
+    ChosenInlineResultHandler
 )
 from pyrogram.middleware import Middleware
 from pyrogram.raw.types import (
-    UpdateBotCallbackQuery,
-    UpdateBotInlineQuery,
-    UpdateBotInlineSend,
-    UpdateDeleteChannelMessages,
-    UpdateDeleteMessages,
-    UpdateEditChannelMessage,
-    UpdateEditMessage,
-    UpdateInlineBotCallbackQuery,
-    UpdateMessagePoll,
-    UpdateNewChannelMessage,
-    UpdateNewMessage,
-    UpdateNewScheduledMessage,
-    UpdateUserStatus,
+    UpdateNewMessage, UpdateNewChannelMessage, UpdateNewScheduledMessage,
+    UpdateEditMessage, UpdateEditChannelMessage,
+    UpdateDeleteMessages, UpdateDeleteChannelMessages,
+    UpdateBotCallbackQuery, UpdateInlineBotCallbackQuery,
+    UpdateUserStatus, UpdateBotInlineQuery, UpdateMessagePoll,
+    UpdateBotInlineSend
 )
 
 log = logging.getLogger(__name__)
@@ -58,7 +47,7 @@ class Dispatcher:
     NEW_MESSAGE_UPDATES = (
         UpdateNewMessage,
         UpdateNewChannelMessage,
-        UpdateNewScheduledMessage,
+        UpdateNewScheduledMessage
     )
 
     EDIT_MESSAGE_UPDATES = (
@@ -68,12 +57,12 @@ class Dispatcher:
 
     DELETE_MESSAGES_UPDATES = (
         UpdateDeleteMessages,
-        UpdateDeleteChannelMessages,
+        UpdateDeleteChannelMessages
     )
 
     CALLBACK_QUERY_UPDATES = (
         UpdateBotCallbackQuery,
-        UpdateInlineBotCallbackQuery,
+        UpdateInlineBotCallbackQuery
     )
 
     MESSAGE_UPDATES = NEW_MESSAGE_UPDATES + EDIT_MESSAGE_UPDATES
@@ -186,6 +175,9 @@ class Dispatcher:
 
         self.loop.create_task(fn())
 
+    def __prepare_middlewares(self) -> Iterator[Middleware]:
+        yield from reversed(self.middlewares)
+
     def add_middleware(self, middleware: Middleware):
         async def fn():
             for lock in self.locks_list:
@@ -212,10 +204,7 @@ class Dispatcher:
 
         self.loop.create_task(fn())
 
-    def __prepare_middlewares(self) -> Iterator[Middleware]:
-        yield from reversed(self.middlewares)
-
-    async def handle_update(self, raw_update, parsed_update, handler_type, *raw_update_args):
+    async def handle_update(self, update, parsed_update, handler_type, users, chats):
         for group in self.groups.values():
             for handler in group:
                 args = None
@@ -229,13 +218,21 @@ class Dispatcher:
                         continue
 
                 elif isinstance(handler, RawUpdateHandler):
-                    args = (raw_update, *raw_update_args,)
+                    args = (update, users, chats)
 
                 if args is None:
                     continue
 
                 try:
-                    await handler(self.client, *args)
+                    if inspect.iscoroutinefunction(handler.callback):
+                        await handler.callback(self.client, *args)
+                    else:
+                        await self.loop.run_in_executor(
+                            self.client.executor,
+                            handler.callback,
+                            self.client,
+                            *args
+                        )
                 except pyrogram.StopPropagation:
                     raise
                 except pyrogram.ContinuePropagation:
@@ -245,19 +242,16 @@ class Dispatcher:
 
                 break
 
-    async def handle_update_with_middlewares(self, raw_update, parsed_update, *args, **kwargs):
+    async def handle_update_with_middlewares(self, update, parsed_update, handler_type, users, chats):
         async def fn(*_, **__):
-            """
-            Final "middleware" stub that just calls handle_update ignoring passed args
-            """
-            return await self.handle_update(raw_update, parsed_update, *args, **kwargs)
+            return await self.handle_update(update, parsed_update, handler_type, users, chats)
 
         call_next = fn
 
         for m in self.__middlewares_handlers:
             call_next = update_wrapper(partial(m, call_next=call_next), call_next)
 
-        return await call_next(self.client, parsed_update if bool(parsed_update) else raw_update)
+        return await call_next(self.client, parsed_update if bool(parsed_update) else update)
 
     async def handler_worker(self, lock):
         while True:
@@ -277,7 +271,7 @@ class Dispatcher:
                 )
 
                 async with lock:
-                    handler_args = (update, parsed_update, handler_type, users, chats,)
+                    handler_args = (update, parsed_update, handler_type, users, chats)
 
                     if bool(self.__middlewares_handlers):
                         await self.handle_update_with_middlewares(*handler_args)

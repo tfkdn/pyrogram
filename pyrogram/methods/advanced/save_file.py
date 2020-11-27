@@ -193,7 +193,7 @@ class SaveFile(Scaffold):
                         if inspect.iscoroutinefunction(progress):
                             await func()
                         else:
-                            await self.run_in_executor(func)
+                            await self.loop.run_in_executor(self.executor, func)
         except StopTransmission:
             raise
         except Exception as e:

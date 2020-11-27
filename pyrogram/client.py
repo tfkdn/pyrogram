@@ -29,17 +29,22 @@ from configparser import ConfigParser
 from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
-from typing import List, Union
+from typing import Union, List
 
 import pyrogram
-from pyrogram import raw, utils
+from pyrogram import raw
+from pyrogram import utils
 from pyrogram.crypto import aes
-from pyrogram.errors import (AuthBytesInvalid, BadRequest, ChannelPrivate, SessionPasswordNeeded, VolumeLocNotFound)
+from pyrogram.errors import (
+    SessionPasswordNeeded,
+    VolumeLocNotFound, ChannelPrivate,
+    AuthBytesInvalid, BadRequest
+)
 from pyrogram.handlers.handler import Handler
 from pyrogram.methods import Methods
 from pyrogram.session import Auth, Session
-from pyrogram.storage import FileStorage, MemoryStorage, Storage
-from pyrogram.types import TermsOfService, User
+from pyrogram.storage import Storage, FileStorage, MemoryStorage
+from pyrogram.types import User, TermsOfService
 from pyrogram.utils import ainput
 from .dispatcher import Dispatcher
 from .scaffold import Scaffold
@@ -953,7 +958,10 @@ class Client(Methods, Scaffold):
                                 *progress_args
                             )
 
-                            await self.run_func_async(func)
+                            if inspect.iscoroutinefunction(progress):
+                                await func()
+                            else:
+                                await self.loop.run_in_executor(self.executor, func)
 
                         r = await session.send(
                             raw.functions.upload.GetFile(
@@ -1040,7 +1048,10 @@ class Client(Methods, Scaffold):
                                     *progress_args
                                 )
 
-                                await self.run_func_async(func)
+                                if inspect.iscoroutinefunction(progress):
+                                    await func()
+                                else:
+                                    await self.loop.run_in_executor(self.executor, func)
 
                             if len(chunk) < limit:
                                 break
@@ -1068,12 +1079,3 @@ class Client(Methods, Scaffold):
 
         if extensions:
             return extensions.split(" ")[0]
-
-    async def run_in_executor(self, func: callable, *args):
-        return await self.loop.run_in_executor(self.executor, func, *args)
-
-    async def run_func_async(self, func: callable, *args, **kwargs):
-        if inspect.iscoroutinefunction(func):
-            await func(*args, **kwargs)
-        else:
-            await self.run_in_executor(func, *args)
