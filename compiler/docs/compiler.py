@@ -209,7 +209,6 @@ def pyrogram_api():
             iter_dialogs
             get_dialogs_count
             update_chat_username
-            get_common_chats
             get_nearby_chats
             archive_chats
             unarchive_chats
@@ -219,6 +218,7 @@ def pyrogram_api():
             create_supergroup
             delete_channel
             delete_supergroup
+            delete_user_history
             set_slow_mode
         """,
         users="""
@@ -234,6 +234,7 @@ def pyrogram_api():
             update_profile
             block_user
             unblock_user
+            get_common_chats
         """,
         contacts="""
         Contacts
