@@ -21,7 +21,7 @@ import re
 import shutil
 from sys import argv
 
-from setuptools import setup, find_packages, Command
+from setuptools import Command, find_packages, setup
 
 from compiler.api import compiler as api_compiler
 from compiler.docs import compiler as docs_compiler
