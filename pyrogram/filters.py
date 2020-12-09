@@ -718,11 +718,11 @@ def command(commands: str or List[str], prefixes: str or List[str] = "/", case_s
             Pass True if you want your command(s) to be case sensitive. Defaults to False.
             Examples: when True, command="Start" would trigger /Start but not /start.
     """
-    command_re = re.compile(r"([\"'])(.*?)(?<!\\)\1|(\S+)")
+    # command_re = re.compile(r"([\"'])(.*?)(?<!\\)\1|(\S+)")
 
     async def func(flt, _, message: Message):
         text = message.text or message.caption
-        message.command = None
+        # message.command = None
 
         if not text:
             return False
@@ -743,10 +743,10 @@ def command(commands: str or List[str], prefixes: str or List[str] = "/", case_s
                 # between the quotes, group(3) is unquoted, whitespace-split text
 
                 # Remove the escape character from the arguments
-                message.command = [cmd] + [
-                    re.sub(r"\\([\"'])", r"\1", m.group(2) or m.group(3) or "")
-                    for m in command_re.finditer(without_prefix[len(cmd):])
-                ]
+                # message.command = [cmd] + [
+                #     re.sub(r"\\([\"'])", r"\1", m.group(2) or m.group(3) or "")
+                #     for m in command_re.finditer(without_prefix[len(cmd):])
+                # ]
 
                 return True
 
