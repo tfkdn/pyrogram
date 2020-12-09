@@ -698,7 +698,7 @@ class Message(Object, Update):
             return parsed_message
 
     @cached_property
-    async def command(self) -> List[str]:
+    def command(self) -> List[str]:
         text = self.text or self.caption
 
         if not text:
@@ -707,23 +707,20 @@ class Message(Object, Update):
         pattern = r"(?i)^{}(?:\s|$)"
         prefix = "/"
 
-        if not text.startswith(prefix):
+        if not text.startswith('/'):
             return []
 
         without_prefix = text[len(prefix):]
-        cmd = without_prefix.split(' ')[0]
+        without_prefix_split = without_prefix.split()
 
-        if not re.match(pattern.format(re.escape(cmd)), without_prefix):
+        if not re.match(pattern.format(re.escape(without_prefix_split[0])), without_prefix):
             return []
 
-        # match.groups are 1-indexed, group(1) is the quote, group(2) is the text
-        # between the quotes, group(3) is unquoted, whitespace-split text
-
-        # Remove the escape character from the arguments
-        return [cmd] + [
-            re.sub(r"\\([\"'])", r"\1", m.group(2) or m.group(3) or "")
-            for m in command_re.finditer(without_prefix[len(cmd):])
-        ]
+        return without_prefix_split
+        # return [cmd] + [
+        #     re.sub(r"\\([\"'])", r"\1", m.group(2) or m.group(3) or "")
+        #     for m in command_re.finditer(without_prefix[len(cmd):])
+        # ]
 
     @property
     def link(self) -> str:
