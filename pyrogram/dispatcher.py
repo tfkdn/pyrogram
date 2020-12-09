@@ -237,8 +237,6 @@ class Dispatcher:
                     raise
                 except pyrogram.ContinuePropagation:
                     continue
-                except Exception as e:
-                    log.error(e, exc_info=True)
 
                 break
 
@@ -278,6 +276,6 @@ class Dispatcher:
                         await self.handle_update(update, parsed_update, handler_type, users, chats)
 
             except pyrogram.StopPropagation:
-                pass
+                continue
             except Exception as e:
                 log.error(e, exc_info=True)
