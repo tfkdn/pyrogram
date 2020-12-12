@@ -18,7 +18,6 @@
 
 import logging
 import re
-from distutils.dist import command_re
 from functools import cached_property, partial
 from typing import BinaryIO, List, Match, Union
 
@@ -2147,6 +2146,7 @@ class Message(Object, Update):
             caption: str = "",
             parse_mode: Union[str, None] = object,
             caption_entities: List["types.MessageEntity"] = None,
+            ttl_seconds: int = None,
             duration: int = 0,
             width: int = 0,
             height: int = 0,
@@ -2203,6 +2203,11 @@ class Message(Object, Update):
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
                 List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+
+            ttl_seconds (``int``, *optional*):
+                Self-Destruct Timer.
+                If you set a timer, the video will self-destruct in *ttl_seconds*
+                seconds after it was viewed.
 
             duration (``int``, *optional*):
                 Duration of sent video in seconds.
@@ -2275,6 +2280,7 @@ class Message(Object, Update):
             caption=caption,
             parse_mode=parse_mode,
             caption_entities=caption_entities,
+            ttl_seconds=ttl_seconds,
             duration=duration,
             width=width,
             height=height,
@@ -2729,8 +2735,6 @@ class Message(Object, Update):
             self,
             chat_id: int or str,
             disable_notification: bool = None,
-            as_copy: bool = False,
-            remove_caption: bool = False,
             schedule_date: int = None
     ) -> Union["types.Message", List["types.Message"]]:
         """Bound method *forward* of :obj:`~pyrogram.types.Message`.
@@ -2760,15 +2764,6 @@ class Message(Object, Update):
                 Sends the message silently.
                 Users will receive a notification with no sound.
 
-            as_copy (``bool``, *optional*):
-                Pass True to forward messages without the forward header (i.e.: send a copy of the message content).
-                Defaults to False.
-
-            remove_caption (``bool``, *optional*):
-                If set to True and *as_copy* is enabled as well, media captions are not preserved when copying the
-                message. Has no effect if *as_copy* is not enabled.
-                Defaults to False.
-
             schedule_date (``int``, *optional*):
                 Date when the message will be automatically sent. Unix time.
 
@@ -2778,109 +2773,193 @@ class Message(Object, Update):
         Raises:
             RPCError: In case of a Telegram RPC error.
         """
-        if as_copy:
-            if self.service:
-                log.warning(f"Service messages cannot be copied. "
-                            f"chat_id: {self.chat.id}, message_id: {self.message_id}")
-            elif self.game and not await self._client.storage.is_bot():
-                log.warning(f"Users cannot send messages with Game media type. "
-                            f"chat_id: {self.chat.id}, message_id: {self.message_id}")
-            elif self.text:
-                return await self._client.send_message(
-                    chat_id,
-                    text=self.text.html,
-                    parse_mode="html",
-                    disable_web_page_preview=not self.web_page,
-                    disable_notification=disable_notification,
-                    schedule_date=schedule_date
-                )
-            elif self.media:
-                caption = self.caption.html if self.caption and not remove_caption else ""
+        return await self._client.forward_messages(
+            chat_id=chat_id,
+            from_chat_id=self.chat.id,
+            message_ids=self.message_id,
+            disable_notification=disable_notification,
+            schedule_date=schedule_date
+        )
 
-                send_media = partial(
-                    self._client.send_cached_media,
-                    chat_id=chat_id,
-                    disable_notification=disable_notification,
-                    schedule_date=schedule_date
-                )
+    async def copy(
+            self,
+            chat_id: Union[int, str],
+            caption: str = None,
+            parse_mode: Union[str, None] = object,
+            caption_entities: List["types.MessageEntity"] = None,
+            disable_notification: bool = None,
+            reply_to_message_id: int = None,
+            schedule_date: int = None,
+            reply_markup: Union[
+                "types.InlineKeyboardMarkup",
+                "types.ReplyKeyboardMarkup",
+                "types.ReplyKeyboardRemove",
+                "types.ForceReply"
+            ] = None
+    ) -> Union["types.Message", List["types.Message"]]:
+        """Bound method *copy* of :obj:`~pyrogram.types.Message`.
 
-                if self.photo:
-                    file_id = self.photo.file_id
-                elif self.audio:
-                    file_id = self.audio.file_id
-                elif self.document:
-                    file_id = self.document.file_id
-                elif self.video:
-                    file_id = self.video.file_id
-                elif self.animation:
-                    file_id = self.animation.file_id
-                elif self.voice:
-                    file_id = self.voice.file_id
-                elif self.sticker:
-                    file_id = self.sticker.file_id
-                elif self.video_note:
-                    file_id = self.video_note.file_id
-                elif self.contact:
-                    return await self._client.send_contact(
-                        chat_id,
-                        phone_number=self.contact.phone_number,
-                        first_name=self.contact.first_name,
-                        last_name=self.contact.last_name,
-                        vcard=self.contact.vcard,
-                        disable_notification=disable_notification,
-                        schedule_date=schedule_date
-                    )
-                elif self.location:
-                    return await self._client.send_location(
-                        chat_id,
-                        latitude=self.location.latitude,
-                        longitude=self.location.longitude,
-                        disable_notification=disable_notification,
-                        schedule_date=schedule_date
-                    )
-                elif self.venue:
-                    return await self._client.send_venue(
-                        chat_id,
-                        latitude=self.venue.location.latitude,
-                        longitude=self.venue.location.longitude,
-                        title=self.venue.title,
-                        address=self.venue.address,
-                        foursquare_id=self.venue.foursquare_id,
-                        foursquare_type=self.venue.foursquare_type,
-                        disable_notification=disable_notification,
-                        schedule_date=schedule_date
-                    )
-                elif self.poll:
-                    return await self._client.send_poll(
-                        chat_id,
-                        question=self.poll.question,
-                        options=[opt.text for opt in self.poll.options],
-                        disable_notification=disable_notification,
-                        schedule_date=schedule_date
-                    )
-                elif self.game:
-                    return await self._client.send_game(
-                        chat_id,
-                        game_short_name=self.game.short_name,
-                        disable_notification=disable_notification
-                    )
-                else:
-                    raise ValueError("Unknown media type")
+        Use as a shortcut for:
 
-                if self.sticker or self.video_note:  # Sticker and VideoNote should have no caption
-                    return await send_media(file_id=file_id)
-                else:
-                    return await send_media(file_id=file_id, caption=caption, parse_mode="html")
-            else:
-                raise ValueError("Can't copy this message")
-        else:
-            return await self._client.forward_messages(
+        .. code-block:: python
+
+            client.copy_message(
                 chat_id=chat_id,
-                from_chat_id=self.chat.id,
-                message_ids=self.message_id,
-                disable_notification=disable_notification,
-                schedule_date=schedule_date
+                from_chat_id=message.chat.id,
+                message_ids=message.message_id
             )
+
+        Example:
+            .. code-block:: python
+
+                message.copy(chat_id)
+
+        Parameters:
+            chat_id (``int`` | ``str``):
+                Unique identifier (int) or username (str) of the target chat.
+                For your personal cloud (Saved Messages) you can simply use "me" or "self".
+                For a contact that exists in your Telegram address book you can use his phone number (str).
+
+            caption (``string``, *optional*):
+                New caption for media, 0-1024 characters after entities parsing.
+                If not specified, the original caption is kept.
+                Pass "" (empty string) to remove the caption.
+
+            parse_mode (``str``, *optional*):
+                By default, texts are parsed using both Markdown and HTML styles.
+                You can combine both syntaxes together.
+                Pass "markdown" or "md" to enable Markdown-style parsing only.
+                Pass "html" to enable HTML-style parsing only.
+                Pass None to completely disable style parsing.
+
+            caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
+                List of special entities that appear in the new caption, which can be specified instead of __parse_mode__.
+
+            disable_notification (``bool``, *optional*):
+                Sends the message silently.
+                Users will receive a notification with no sound.
+
+            reply_to_message_id (``int``, *optional*):
+                If the message is a reply, ID of the original message.
+
+            schedule_date (``int``, *optional*):
+                Date when the message will be automatically sent. Unix time.
+
+            reply_markup (:obj:`~pyrogram.types.InlineKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardRemove` | :obj:`~pyrogram.types.ForceReply`, *optional*):
+                Additional interface options. An object for an inline keyboard, custom reply keyboard,
+                instructions to remove reply keyboard or to force a reply from the user.
+
+        Returns:
+            :obj:`~pyrogram.types.Message`: On success, the copied message is returned.
+
+        Raises:
+            RPCError: In case of a Telegram RPC error.
+        """
+        if self.service:
+            log.warning(f"Service messages cannot be copied. "
+                        f"chat_id: {self.chat.id}, message_id: {self.message_id}")
+        elif self.game and not await self._client.storage.is_bot():
+            log.warning(f"Users cannot send messages with Game media type. "
+                        f"chat_id: {self.chat.id}, message_id: {self.message_id}")
+        elif self.text:
+            return await self._client.send_message(
+                chat_id,
+                text=self.text,
+                entities=self.entities,
+                disable_web_page_preview=not self.web_page,
+                disable_notification=disable_notification,
+                reply_to_message_id=reply_to_message_id,
+                schedule_date=schedule_date,
+                reply_markup=reply_markup
+            )
+        elif self.media:
+            send_media = partial(
+                self._client.send_cached_media,
+                chat_id=chat_id,
+                disable_notification=disable_notification,
+                reply_to_message_id=reply_to_message_id,
+                schedule_date=schedule_date,
+                reply_markup=reply_markup
+            )
+
+            if self.photo:
+                file_id = self.photo.file_id
+            elif self.audio:
+                file_id = self.audio.file_id
+            elif self.document:
+                file_id = self.document.file_id
+            elif self.video:
+                file_id = self.video.file_id
+            elif self.animation:
+                file_id = self.animation.file_id
+            elif self.voice:
+                file_id = self.voice.file_id
+            elif self.sticker:
+                file_id = self.sticker.file_id
+            elif self.video_note:
+                file_id = self.video_note.file_id
+            elif self.contact:
+                return await self._client.send_contact(
+                    chat_id,
+                    phone_number=self.contact.phone_number,
+                    first_name=self.contact.first_name,
+                    last_name=self.contact.last_name,
+                    vcard=self.contact.vcard,
+                    disable_notification=disable_notification,
+                    schedule_date=schedule_date
+                )
+            elif self.location:
+                return await self._client.send_location(
+                    chat_id,
+                    latitude=self.location.latitude,
+                    longitude=self.location.longitude,
+                    disable_notification=disable_notification,
+                    schedule_date=schedule_date
+                )
+            elif self.venue:
+                return await self._client.send_venue(
+                    chat_id,
+                    latitude=self.venue.location.latitude,
+                    longitude=self.venue.location.longitude,
+                    title=self.venue.title,
+                    address=self.venue.address,
+                    foursquare_id=self.venue.foursquare_id,
+                    foursquare_type=self.venue.foursquare_type,
+                    disable_notification=disable_notification,
+                    schedule_date=schedule_date
+                )
+            elif self.poll:
+                return await self._client.send_poll(
+                    chat_id,
+                    question=self.poll.question,
+                    options=[opt.text for opt in self.poll.options],
+                    disable_notification=disable_notification,
+                    schedule_date=schedule_date
+                )
+            elif self.game:
+                return await self._client.send_game(
+                    chat_id,
+                    game_short_name=self.game.short_name,
+                    disable_notification=disable_notification
+                )
+            else:
+                raise ValueError("Unknown media type")
+
+            if self.sticker or self.video_note:  # Sticker and VideoNote should have no caption
+                return await send_media(file_id=file_id)
+            else:
+                if caption is None:
+                    caption = self.caption or ""
+                    caption_entities = self.caption_entities
+
+                return await send_media(
+                    file_id=file_id,
+                    caption=caption,
+                    parse_mode=parse_mode,
+                    caption_entities=caption_entities
+                )
+        else:
+            raise ValueError("Can't copy this message")
 
     async def delete(self, revoke: bool = True):
         """Bound method *delete* of :obj:`~pyrogram.types.Message`.

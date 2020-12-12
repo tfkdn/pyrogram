@@ -16,20 +16,22 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from typing import Union, List
 
-from pyrogram import raw
 from pyrogram import types
-from pyrogram import utils
 from pyrogram.scaffold import Scaffold
 
+log = logging.getLogger(__name__)
 
-class SendCachedMedia(Scaffold):
-    async def send_cached_media(
+
+class CopyMessage(Scaffold):
+    async def copy_message(
         self,
         chat_id: Union[int, str],
-        file_id: str,
-        caption: str = "",
+        from_chat_id: Union[int, str],
+        message_id: int,
+        caption: str = None,
         parse_mode: Union[str, None] = object,
         caption_entities: List["types.MessageEntity"] = None,
         disable_notification: bool = None,
@@ -41,12 +43,11 @@ class SendCachedMedia(Scaffold):
             "types.ReplyKeyboardRemove",
             "types.ForceReply"
         ] = None
-    ) -> Union["types.Message", None]:
-        """Send any media stored on the Telegram servers using a file_id.
+    ) -> List["types.Message"]:
+        """Copy messages of any kind.
 
-        This convenience method works with any valid file_id only.
-        It does the same as calling the relevant method for sending media using a file_id, thus saving you from the
-        hassle of using the correct method for the media the file_id is pointing to.
+        The method is analogous to the method :meth:`~Client.forward_messages`, but the copied message doesn't have a
+        link to the original message.
 
         Parameters:
             chat_id (``int`` | ``str``):
@@ -54,12 +55,18 @@ class SendCachedMedia(Scaffold):
                 For your personal cloud (Saved Messages) you can simply use "me" or "self".
                 For a contact that exists in your Telegram address book you can use his phone number (str).
 
-            file_id (``str``):
-                Media to send.
-                Pass a file_id as string to send a media that exists on the Telegram servers.
+            from_chat_id (``int`` | ``str``):
+                Unique identifier (int) or username (str) of the source chat where the original message was sent.
+                For your personal cloud (Saved Messages) you can simply use "me" or "self".
+                For a contact that exists in your Telegram address book you can use his phone number (str).
 
-            caption (``str``, *optional*):
-                Media caption, 0-1024 characters.
+            message_id (``int``):
+                Message identifier in the chat specified in *from_chat_id*.
+
+            caption (``string``, *optional*):
+                New caption for media, 0-1024 characters after entities parsing.
+                If not specified, the original caption is kept.
+                Pass "" (empty string) to remove the caption.
 
             parse_mode (``str``, *optional*):
                 By default, texts are parsed using both Markdown and HTML styles.
@@ -69,7 +76,7 @@ class SendCachedMedia(Scaffold):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the new caption, which can be specified instead of __parse_mode__.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.
@@ -86,34 +93,24 @@ class SendCachedMedia(Scaffold):
                 instructions to remove reply keyboard or to force a reply from the user.
 
         Returns:
-            :obj:`~pyrogram.types.Message`: On success, the sent media message is returned.
+            :obj:`~pyrogram.types.Message`: On success, the copied message is returned.
 
         Example:
             .. code-block:: python
 
-                app.send_cached_media("me", "CAADBAADzg4AAvLQYAEz_x2EOgdRwBYE")
+                # Copy a message
+                app.copy_messages("me", "pyrogram", 20)
+
         """
+        message: types.Message = await self.get_messages(from_chat_id, message_id)
 
-        r = await self.send(
-            raw.functions.messages.SendMedia(
-                peer=await self.resolve_peer(chat_id),
-                media=utils.get_input_media_from_file_id(file_id),
-                silent=disable_notification or None,
-                reply_to_msg_id=reply_to_message_id,
-                random_id=self.rnd_id(),
-                schedule_date=schedule_date,
-                reply_markup=reply_markup.write() if reply_markup else None,
-                **await utils.parse_text_entities(self, caption, parse_mode, caption_entities)
-            )
+        return await message.copy(
+            chat_id=chat_id,
+            caption=caption,
+            parse_mode=parse_mode,
+            caption_entities=caption_entities,
+            disable_notification=disable_notification,
+            reply_to_message_id=reply_to_message_id,
+            schedule_date=schedule_date,
+            reply_markup=reply_markup
         )
-
-        for i in r.updates:
-            if isinstance(i, (raw.types.UpdateNewMessage,
-                              raw.types.UpdateNewChannelMessage,
-                              raw.types.UpdateNewScheduledMessage)):
-                return await types.Message._parse(
-                    self, i.message,
-                    {i.id: i for i in r.users},
-                    {i.id: i for i in r.chats},
-                    is_scheduled=isinstance(i, raw.types.UpdateNewScheduledMessage)
-                )
