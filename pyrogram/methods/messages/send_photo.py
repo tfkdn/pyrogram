@@ -18,7 +18,7 @@
 
 import os
 import re
-from typing import Union, BinaryIO, List
+from typing import Union, BinaryIO, List, Optional
 
 import pyrogram
 from pyrogram import raw
@@ -35,7 +35,7 @@ class SendPhoto(Scaffold):
         chat_id: Union[int, str],
         photo: Union[str, BinaryIO],
         caption: str = "",
-        parse_mode: Union[str, None] = object,
+        parse_mode: Optional[str] = object,
         caption_entities: List["types.MessageEntity"] = None,
         ttl_seconds: int = None,
         disable_notification: bool = None,
@@ -49,7 +49,7 @@ class SendPhoto(Scaffold):
         ] = None,
         progress: callable = None,
         progress_args: tuple = ()
-    ) -> Union["types.Message", None]:
+    ) -> Optional["types.Message"]:
         """Send photos.
 
         Parameters:
@@ -76,7 +76,7 @@ class SendPhoto(Scaffold):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             ttl_seconds (``int``, *optional*):
                 Self-Destruct Timer.

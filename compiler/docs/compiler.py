@@ -170,6 +170,7 @@ def pyrogram_api():
             send_chat_action
             delete_messages
             get_messages
+            get_media_group
             get_history
             get_history_count
             read_history
@@ -221,6 +222,7 @@ def pyrogram_api():
             delete_supergroup
             delete_user_history
             set_slow_mode
+            mark_chat_unread
         """,
         users="""
         Users
@@ -476,6 +478,7 @@ def pyrogram_api():
             Chat.add_members
             Chat.join
             Chat.leave
+            Chat.mark_unread
         """,
         user="""
         User

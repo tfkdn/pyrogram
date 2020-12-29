@@ -17,7 +17,7 @@
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
 import html
-from typing import List
+from typing import List, Optional
 
 import pyrogram
 from pyrogram import raw
@@ -112,10 +112,10 @@ class User(Object, Update):
             *None*, for bots.
 
         last_online_date (``int``, *optional*):
-            Last online date of a user. Only available in case status is "*offline*".
+            Last online date of a user, unix time. Only available in case status is "*offline*".
 
         next_offline_date (``int``, *optional*):
-            Date when a user will automatically go offline. Only available in case status is "*online*".
+            Date when a user will automatically go offline, unix time. Only available in case status is "*online*".
 
         username (``str``, *optional*):
             User's or bot's username.
@@ -201,7 +201,7 @@ class User(Object, Update):
         return Link(f"tg://user?id={self.id}", self.first_name, self._client.parse_mode)
 
     @staticmethod
-    def _parse(client, user: "raw.types.User") -> "User" or None:
+    def _parse(client, user: "raw.types.User") -> Optional["User"]:
         if user is None:
             return None
 

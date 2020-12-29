@@ -18,7 +18,7 @@
 
 import os
 import re
-from typing import Union, BinaryIO, List
+from typing import Union, BinaryIO, List, Optional
 
 from pyrogram import StopTransmission
 from pyrogram import raw
@@ -35,7 +35,7 @@ class SendAudio(Scaffold):
         chat_id: Union[int, str],
         audio: Union[str, BinaryIO],
         caption: str = "",
-        parse_mode: Union[str, None] = object,
+        parse_mode: Optional[str] = object,
         caption_entities: List["types.MessageEntity"] = None,
         duration: int = 0,
         performer: str = None,
@@ -53,7 +53,7 @@ class SendAudio(Scaffold):
         ] = None,
         progress: callable = None,
         progress_args: tuple = ()
-    ) -> Union["types.Message", None]:
+    ) -> Optional["types.Message"]:
         """Send audio files.
 
         For sending voice messages, use the :meth:`~pyrogram.Client.send_voice` method instead.
@@ -82,7 +82,7 @@ class SendAudio(Scaffold):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             duration (``int``, *optional*):
                 Duration of the audio in seconds.

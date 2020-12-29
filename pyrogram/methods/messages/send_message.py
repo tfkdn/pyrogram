@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Union, List
+from typing import Union, List, Optional
 
 from pyrogram import raw, utils
 from pyrogram import types
@@ -28,7 +28,7 @@ class SendMessage(Scaffold):
         self,
         chat_id: Union[int, str],
         text: str,
-        parse_mode: Union[str, None] = object,
+        parse_mode: Optional[str] = object,
         entities: List["types.MessageEntity"] = None,
         disable_web_page_preview: bool = None,
         disable_notification: bool = None,
@@ -60,7 +60,7 @@ class SendMessage(Scaffold):
                 Pass None to completely disable style parsing.
 
             entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in message text, which can be specified instead of __parse_mode__.
+                List of special entities that appear in message text, which can be specified instead of *parse_mode*.
 
             disable_web_page_preview (``bool``, *optional*):
                 Disables link previews for links in this message.

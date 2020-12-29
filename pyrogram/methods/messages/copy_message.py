@@ -17,7 +17,7 @@
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from typing import Union, List
+from typing import Union, List, Optional
 
 from pyrogram import types
 from pyrogram.scaffold import Scaffold
@@ -32,7 +32,7 @@ class CopyMessage(Scaffold):
         from_chat_id: Union[int, str],
         message_id: int,
         caption: str = None,
-        parse_mode: Union[str, None] = object,
+        parse_mode: Optional[str] = object,
         caption_entities: List["types.MessageEntity"] = None,
         disable_notification: bool = None,
         reply_to_message_id: int = None,
@@ -76,7 +76,7 @@ class CopyMessage(Scaffold):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the new caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the new caption, which can be specified instead of *parse_mode*.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.

@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Union, List
+from typing import Optional, List
 
 from .input_media import InputMedia
 from ..messages_and_media import MessageEntity
@@ -44,14 +44,14 @@ class InputMediaPhoto(InputMedia):
             Pass None to completely disable style parsing.
 
         caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-            List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+            List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
     """
 
     def __init__(
         self,
         media: str,
         caption: str = "",
-        parse_mode: Union[str, None] = object,
+        parse_mode: Optional[str] = object,
         caption_entities: List[MessageEntity] = None
     ):
         super().__init__(media, caption, parse_mode, caption_entities)

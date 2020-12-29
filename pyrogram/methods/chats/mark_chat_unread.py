@@ -16,46 +16,30 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Union, Optional
+from typing import Union
 
-from pyrogram import raw
+from pyrogram.raw import functions
 from pyrogram.scaffold import Scaffold
 
 
-class SetSlowMode(Scaffold):
-    async def set_slow_mode(
+class MarkChatUnread(Scaffold):
+    async def mark_chat_unread(
         self,
         chat_id: Union[int, str],
-        seconds: Optional[int]
     ) -> bool:
-        """Set the slow mode interval for a chat.
+        """Mark a chat as unread.
 
         Parameters:
             chat_id (``int`` | ``str``):
                 Unique identifier (int) or username (str) of the target chat.
 
-            seconds (``int`` | ``None``):
-                Seconds in which members will be able to send only one message per this interval.
-                Valid values are: 0 or None (off), 10, 30, 60 (1m), 300 (5m), 900 (15m) or 3600 (1h).
-
         Returns:
-            ``bool``: True on success.
-
-        Example:
-            .. code-block:: python
-
-                # Set slow mode to 60 seconds
-                app.set_slow_mode("pyrogramchat", 60)
-
-                # Disable slow mode
-                app.set_slow_mode("pyrogramchat", None)
+            ``bool``: On success, True is returned.
         """
 
-        await self.send(
-            raw.functions.channels.ToggleSlowMode(
-                channel=await self.resolve_peer(chat_id),
-                seconds=0 if seconds is None else seconds
+        return await self.send(
+            functions.messages.MarkDialogUnread(
+                peer=await self.resolve_peer(chat_id),
+                unread=True
             )
         )
-
-        return True

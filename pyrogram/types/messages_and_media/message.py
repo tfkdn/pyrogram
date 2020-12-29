@@ -17,14 +17,18 @@
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from functools import partial
+from typing import List, Match, Union, BinaryIO, Optional
 import re
 from functools import cached_property, partial
 from typing import BinaryIO, List, Match, Union
 
 import pyrogram
-from pyrogram import raw, types, utils
+from pyrogram import raw
+from pyrogram import types
+from pyrogram import utils
 from pyrogram.errors import MessageIdsEmpty
-from pyrogram.parser import Parser, utils as parser_utils
+from pyrogram.parser import utils as parser_utils, Parser
 from ..object import Object
 from ..update import Update
 
@@ -333,6 +337,7 @@ class Message(Object, Update):
             via_bot: "types.User" = None,
             outgoing: bool = None,
             matches: List[Match] = None,
+            command: List[str] = None,
             reply_markup: Union[
                 "types.InlineKeyboardMarkup",
                 "types.ReplyKeyboardMarkup",
@@ -729,15 +734,15 @@ class Message(Object, Update):
             return f"https://t.me/c/{utils.get_channel_id(self.chat.id)}/{self.message_id}"
 
     async def reply_text(
-            self,
-            text: str,
-            quote: bool = None,
-            parse_mode: Union[str, None] = object,
-            entities: List["types.MessageEntity"] = None,
-            disable_web_page_preview: bool = None,
-            disable_notification: bool = None,
-            reply_to_message_id: int = None,
-            reply_markup=None
+        self,
+        text: str,
+        quote: bool = None,
+        parse_mode: Optional[str] = object,
+        entities: List["types.MessageEntity"] = None,
+        disable_web_page_preview: bool = None,
+        disable_notification: bool = None,
+        reply_to_message_id: int = None,
+        reply_markup=None
     ) -> "Message":
         """Bound method *reply_text* of :obj:`~pyrogram.types.Message`.
 
@@ -773,7 +778,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in message text, which can be specified instead of __parse_mode__.
+                List of special entities that appear in message text, which can be specified instead of *parse_mode*.
 
             disable_web_page_preview (``bool``, *optional*):
                 Disables link previews for links in this message.
@@ -815,26 +820,26 @@ class Message(Object, Update):
     reply = reply_text
 
     async def reply_animation(
-            self,
-            animation: Union[str, BinaryIO],
-            quote: bool = None,
-            caption: str = "",
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            duration: int = 0,
-            width: int = 0,
-            height: int = 0,
-            thumb: str = None,
-            disable_notification: bool = None,
-            reply_markup: Union[
-                "types.InlineKeyboardMarkup",
-                "types.ReplyKeyboardMarkup",
-                "types.ReplyKeyboardRemove",
-                "types.ForceReply"
-            ] = None,
-            reply_to_message_id: int = None,
-            progress: callable = None,
-            progress_args: tuple = ()
+        self,
+        animation: Union[str, BinaryIO],
+        quote: bool = None,
+        caption: str = "",
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        duration: int = 0,
+        width: int = 0,
+        height: int = 0,
+        thumb: str = None,
+        disable_notification: bool = None,
+        reply_markup: Union[
+            "types.InlineKeyboardMarkup",
+            "types.ReplyKeyboardMarkup",
+            "types.ReplyKeyboardRemove",
+            "types.ForceReply"
+        ] = None,
+        reply_to_message_id: int = None,
+        progress: callable = None,
+        progress_args: tuple = ()
     ) -> "Message":
         """Bound method *reply_animation* :obj:`~pyrogram.types.Message`.
 
@@ -875,7 +880,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             duration (``int``, *optional*):
                 Duration of sent animation in seconds.
@@ -957,26 +962,26 @@ class Message(Object, Update):
         )
 
     async def reply_audio(
-            self,
-            audio: Union[str, BinaryIO],
-            quote: bool = None,
-            caption: str = "",
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            duration: int = 0,
-            performer: str = None,
-            title: str = None,
-            thumb: str = None,
-            disable_notification: bool = None,
-            reply_to_message_id: int = None,
-            reply_markup: Union[
-                "types.InlineKeyboardMarkup",
-                "types.ReplyKeyboardMarkup",
-                "types.ReplyKeyboardRemove",
-                "types.ForceReply"
-            ] = None,
-            progress: callable = None,
-            progress_args: tuple = ()
+        self,
+        audio: Union[str, BinaryIO],
+        quote: bool = None,
+        caption: str = "",
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        duration: int = 0,
+        performer: str = None,
+        title: str = None,
+        thumb: str = None,
+        disable_notification: bool = None,
+        reply_to_message_id: int = None,
+        reply_markup: Union[
+            "types.InlineKeyboardMarkup",
+            "types.ReplyKeyboardMarkup",
+            "types.ReplyKeyboardRemove",
+            "types.ForceReply"
+        ] = None,
+        progress: callable = None,
+        progress_args: tuple = ()
     ) -> "Message":
         """Bound method *reply_audio* of :obj:`~pyrogram.types.Message`.
 
@@ -1017,7 +1022,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             duration (``int``, *optional*):
                 Duration of the audio in seconds.
@@ -1099,20 +1104,20 @@ class Message(Object, Update):
         )
 
     async def reply_cached_media(
-            self,
-            file_id: str,
-            quote: bool = None,
-            caption: str = "",
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            disable_notification: bool = None,
-            reply_to_message_id: int = None,
-            reply_markup: Union[
-                "types.InlineKeyboardMarkup",
-                "types.ReplyKeyboardMarkup",
-                "types.ReplyKeyboardRemove",
-                "types.ForceReply"
-            ] = None
+        self,
+        file_id: str,
+        quote: bool = None,
+        caption: str = "",
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        disable_notification: bool = None,
+        reply_to_message_id: int = None,
+        reply_markup: Union[
+            "types.InlineKeyboardMarkup",
+            "types.ReplyKeyboardMarkup",
+            "types.ReplyKeyboardRemove",
+            "types.ForceReply"
+        ] = None
     ) -> "Message":
         """Bound method *reply_cached_media* of :obj:`~pyrogram.types.Message`.
 
@@ -1151,7 +1156,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.
@@ -1311,23 +1316,23 @@ class Message(Object, Update):
         )
 
     async def reply_document(
-            self,
-            document: Union[str, BinaryIO],
-            quote: bool = None,
-            thumb: str = None,
-            caption: str = "",
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            disable_notification: bool = None,
-            reply_to_message_id: int = None,
-            reply_markup: Union[
-                "types.InlineKeyboardMarkup",
-                "types.ReplyKeyboardMarkup",
-                "types.ReplyKeyboardRemove",
-                "types.ForceReply"
-            ] = None,
-            progress: callable = None,
-            progress_args: tuple = ()
+        self,
+        document: Union[str, BinaryIO],
+        quote: bool = None,
+        thumb: str = None,
+        caption: str = "",
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        disable_notification: bool = None,
+        reply_to_message_id: int = None,
+        reply_markup: Union[
+            "types.InlineKeyboardMarkup",
+            "types.ReplyKeyboardMarkup",
+            "types.ReplyKeyboardRemove",
+            "types.ForceReply"
+        ] = None,
+        progress: callable = None,
+        progress_args: tuple = ()
     ) -> "Message":
         """Bound method *reply_document* of :obj:`~pyrogram.types.Message`.
 
@@ -1374,7 +1379,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.
@@ -1712,23 +1717,23 @@ class Message(Object, Update):
         )
 
     async def reply_photo(
-            self,
-            photo: Union[str, BinaryIO],
-            quote: bool = None,
-            caption: str = "",
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            ttl_seconds: int = None,
-            disable_notification: bool = None,
-            reply_to_message_id: int = None,
-            reply_markup: Union[
-                "types.InlineKeyboardMarkup",
-                "types.ReplyKeyboardMarkup",
-                "types.ReplyKeyboardRemove",
-                "types.ForceReply"
-            ] = None,
-            progress: callable = None,
-            progress_args: tuple = ()
+        self,
+        photo: Union[str, BinaryIO],
+        quote: bool = None,
+        caption: str = "",
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        ttl_seconds: int = None,
+        disable_notification: bool = None,
+        reply_to_message_id: int = None,
+        reply_markup: Union[
+            "types.InlineKeyboardMarkup",
+            "types.ReplyKeyboardMarkup",
+            "types.ReplyKeyboardRemove",
+            "types.ForceReply"
+        ] = None,
+        progress: callable = None,
+        progress_args: tuple = ()
     ) -> "Message":
         """Bound method *reply_photo* of :obj:`~pyrogram.types.Message`.
 
@@ -1769,7 +1774,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             ttl_seconds (``int``, *optional*):
                 Self-Destruct Timer.
@@ -2140,28 +2145,28 @@ class Message(Object, Update):
         )
 
     async def reply_video(
-            self,
-            video: Union[str, BinaryIO],
-            quote: bool = None,
-            caption: str = "",
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            ttl_seconds: int = None,
-            duration: int = 0,
-            width: int = 0,
-            height: int = 0,
-            thumb: str = None,
-            supports_streaming: bool = True,
-            disable_notification: bool = None,
-            reply_to_message_id: int = None,
-            reply_markup: Union[
-                "types.InlineKeyboardMarkup",
-                "types.ReplyKeyboardMarkup",
-                "types.ReplyKeyboardRemove",
-                "types.ForceReply"
-            ] = None,
-            progress: callable = None,
-            progress_args: tuple = ()
+        self,
+        video: Union[str, BinaryIO],
+        quote: bool = None,
+        caption: str = "",
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        ttl_seconds: int = None,
+        duration: int = 0,
+        width: int = 0,
+        height: int = 0,
+        thumb: str = None,
+        supports_streaming: bool = True,
+        disable_notification: bool = None,
+        reply_to_message_id: int = None,
+        reply_markup: Union[
+            "types.InlineKeyboardMarkup",
+            "types.ReplyKeyboardMarkup",
+            "types.ReplyKeyboardRemove",
+            "types.ForceReply"
+        ] = None,
+        progress: callable = None,
+        progress_args: tuple = ()
     ) -> "Message":
         """Bound method *reply_video* of :obj:`~pyrogram.types.Message`.
 
@@ -2202,7 +2207,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             ttl_seconds (``int``, *optional*):
                 Self-Destruct Timer.
@@ -2412,23 +2417,23 @@ class Message(Object, Update):
         )
 
     async def reply_voice(
-            self,
-            voice: Union[str, BinaryIO],
-            quote: bool = None,
-            caption: str = "",
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            duration: int = 0,
-            disable_notification: bool = None,
-            reply_to_message_id: int = None,
-            reply_markup: Union[
-                "types.InlineKeyboardMarkup",
-                "types.ReplyKeyboardMarkup",
-                "types.ReplyKeyboardRemove",
-                "types.ForceReply"
-            ] = None,
-            progress: callable = None,
-            progress_args: tuple = ()
+        self,
+        voice: Union[str, BinaryIO],
+        quote: bool = None,
+        caption: str = "",
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        duration: int = 0,
+        disable_notification: bool = None,
+        reply_to_message_id: int = None,
+        reply_markup: Union[
+            "types.InlineKeyboardMarkup",
+            "types.ReplyKeyboardMarkup",
+            "types.ReplyKeyboardRemove",
+            "types.ForceReply"
+        ] = None,
+        progress: callable = None,
+        progress_args: tuple = ()
     ) -> "Message":
         """Bound method *reply_voice* of :obj:`~pyrogram.types.Message`.
 
@@ -2469,7 +2474,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             duration (``int``, *optional*):
                 Duration of the voice message in seconds.
@@ -2536,12 +2541,12 @@ class Message(Object, Update):
         )
 
     async def edit_text(
-            self,
-            text: str,
-            parse_mode: Union[str, None] = object,
-            entities: List["types.MessageEntity"] = None,
-            disable_web_page_preview: bool = None,
-            reply_markup: "types.InlineKeyboardMarkup" = None
+        self,
+        text: str,
+        parse_mode: Optional[str] = object,
+        entities: List["types.MessageEntity"] = None,
+        disable_web_page_preview: bool = None,
+        reply_markup: "types.InlineKeyboardMarkup" = None
     ) -> "Message":
         """Bound method *edit_text* of :obj:`~pyrogram.types.Message`.
 
@@ -2572,7 +2577,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in message text, which can be specified instead of __parse_mode__.
+                List of special entities that appear in message text, which can be specified instead of *parse_mode*.
 
             disable_web_page_preview (``bool``, *optional*):
                 Disables link previews for links in this message.
@@ -2599,11 +2604,11 @@ class Message(Object, Update):
     edit = edit_text
 
     async def edit_caption(
-            self,
-            caption: str,
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            reply_markup: "types.InlineKeyboardMarkup" = None
+        self,
+        caption: str,
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        reply_markup: "types.InlineKeyboardMarkup" = None
     ) -> "Message":
         """Bound method *edit_caption* of :obj:`~pyrogram.types.Message`.
 
@@ -2634,7 +2639,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
 
             reply_markup (:obj:`~pyrogram.types.InlineKeyboardMarkup`, *optional*):
                 An InlineKeyboardMarkup object.
@@ -2732,10 +2737,10 @@ class Message(Object, Update):
         )
 
     async def forward(
-            self,
-            chat_id: int or str,
-            disable_notification: bool = None,
-            schedule_date: int = None
+        self,
+        chat_id: Union[int, str],
+        disable_notification: bool = None,
+        schedule_date: int = None
     ) -> Union["types.Message", List["types.Message"]]:
         """Bound method *forward* of :obj:`~pyrogram.types.Message`.
 
@@ -2782,20 +2787,20 @@ class Message(Object, Update):
         )
 
     async def copy(
-            self,
-            chat_id: Union[int, str],
-            caption: str = None,
-            parse_mode: Union[str, None] = object,
-            caption_entities: List["types.MessageEntity"] = None,
-            disable_notification: bool = None,
-            reply_to_message_id: int = None,
-            schedule_date: int = None,
-            reply_markup: Union[
-                "types.InlineKeyboardMarkup",
-                "types.ReplyKeyboardMarkup",
-                "types.ReplyKeyboardRemove",
-                "types.ForceReply"
-            ] = None
+        self,
+        chat_id: Union[int, str],
+        caption: str = None,
+        parse_mode: Optional[str] = object,
+        caption_entities: List["types.MessageEntity"] = None,
+        disable_notification: bool = None,
+        reply_to_message_id: int = None,
+        schedule_date: int = None,
+        reply_markup: Union[
+            "types.InlineKeyboardMarkup",
+            "types.ReplyKeyboardMarkup",
+            "types.ReplyKeyboardRemove",
+            "types.ForceReply"
+        ] = None
     ) -> Union["types.Message", List["types.Message"]]:
         """Bound method *copy* of :obj:`~pyrogram.types.Message`.
 
@@ -2833,7 +2838,7 @@ class Message(Object, Update):
                 Pass None to completely disable style parsing.
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
-                List of special entities that appear in the new caption, which can be specified instead of __parse_mode__.
+                List of special entities that appear in the new caption, which can be specified instead of *parse_mode*.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.
@@ -2870,7 +2875,7 @@ class Message(Object, Update):
                 disable_notification=disable_notification,
                 reply_to_message_id=reply_to_message_id,
                 schedule_date=schedule_date,
-                reply_markup=reply_markup
+                reply_markup=self.reply_markup or reply_markup
             )
         elif self.media:
             send_media = partial(
@@ -2879,7 +2884,7 @@ class Message(Object, Update):
                 disable_notification=disable_notification,
                 reply_to_message_id=reply_to_message_id,
                 schedule_date=schedule_date,
-                reply_markup=reply_markup
+                reply_markup=self.reply_markup or reply_markup
             )
 
             if self.photo:
@@ -2997,7 +3002,7 @@ class Message(Object, Update):
             revoke=revoke
         )
 
-    async def click(self, x: int or str = 0, y: int = None, quote: bool = None, timeout: int = 10):
+    async def click(self, x: Union[int, str] = 0, y: int = None, quote: bool = None, timeout: int = 10):
         """Bound method *click* of :obj:`~pyrogram.types.Message`.
 
         Use as a shortcut for clicking a button attached to the message instead of:
