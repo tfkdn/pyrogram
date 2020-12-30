@@ -1056,6 +1056,6 @@ class Client(Methods, Scaffold):
     def guess_extension(self, mime_type: str) -> Optional[str]:
         return self.mimetypes.guess_extension(mime_type)
 
-    def _raw_updates_handler(self, _, update, *args):
+    async def _raw_updates_handler(self, _, update, *args):
         if isinstance(update, raw.types.UpdateLoginToken):
             await self.export_login_token()
