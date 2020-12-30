@@ -41,7 +41,6 @@ from pyrogram.errors import (
     AuthBytesInvalid, BadRequest
 )
 from pyrogram.handlers.handler import Handler
-from pyrogram.handlers.raw_update_handler import RawUpdateHandler
 from pyrogram.methods import Methods
 from pyrogram.session import Auth, Session
 from pyrogram.storage import Storage, FileStorage, MemoryStorage
@@ -248,7 +247,6 @@ class Client(Methods, Scaffold):
         self.loop = asyncio.get_event_loop()
 
         self.login_by_qr_code = login_by_qr_code
-        self.add_handler(RawUpdateHandler(self._raw_updates_handler))
 
     def __enter__(self):
         return self.start()
@@ -335,39 +333,7 @@ class Client(Methods, Scaffold):
                 print(e.MESSAGE)
                 self.phone_code = None
             except SessionPasswordNeeded as e:
-                print(e.MESSAGE)
-
-                while True:
-                    print("Password hint: {}".format(await self.get_password_hint()))
-
-                    if not self.password:
-                        self.password = await ainput("Enter password (empty to recover): ", hide=self.hide_password)
-
-                    try:
-                        if not self.password:
-                            confirm = await ainput("Confirm password recovery (y/n): ")
-
-                            if confirm == "y":
-                                email_pattern = await self.send_recovery_code()
-                                print(f"The recovery code has been sent to {email_pattern}")
-
-                                while True:
-                                    recovery_code = await ainput("Enter recovery code: ")
-
-                                    try:
-                                        return await self.recover_password(recovery_code)
-                                    except BadRequest as e:
-                                        print(e.MESSAGE)
-                                    except Exception as e:
-                                        log.error(e, exc_info=True)
-                                        raise
-                            else:
-                                self.password = None
-                        else:
-                            return await self.check_password(self.password)
-                    except BadRequest as e:
-                        print(e.MESSAGE)
-                        self.password = None
+                await self.handle_session_password_needed(e)
             else:
                 break
 
@@ -395,6 +361,76 @@ class Client(Methods, Scaffold):
             await self.accept_terms_of_service(signed_in.id)
 
         return signed_up
+
+    async def authorize_with_qr_code(self, max_wait: int = 30):
+        if self.bot_token:
+            raise ValueError('This method can\'t be used by bots')
+
+        try:
+            is_authorized = await self.connect()
+        except ConnectionError:
+            is_authorized = bool(await self.storage.user_id())
+
+        try:
+            if not is_authorized:
+                current_timeout = 0
+
+                while current_timeout < max_wait:
+                    await asyncio.sleep(1)
+                    current_timeout += 1
+
+                    is_authorized = bool(await self.storage.user_id())
+
+                    if is_authorized:
+                        break
+
+                is_authorized = bool(await self.storage.user_id())
+
+                if not is_authorized:
+                    raise TimeoutError
+
+            await self.send(raw.functions.updates.GetState())
+        except (Exception, KeyboardInterrupt):
+            await self.disconnect()
+            raise
+        else:
+            await self.initialize()
+            return self
+
+    async def handle_session_password_needed(self, e: SessionPasswordNeeded):
+        print(e.MESSAGE)
+
+        while True:
+            print("Password hint: {}".format(await self.get_password_hint()))
+
+            if not self.password:
+                self.password = await ainput("Enter password (empty to recover): ", hide=self.hide_password)
+
+            try:
+                if not self.password:
+                    confirm = await ainput("Confirm password recovery (y/n): ")
+
+                    if confirm == "y":
+                        email_pattern = await self.send_recovery_code()
+                        print(f"The recovery code has been sent to {email_pattern}")
+
+                        while True:
+                            recovery_code = await ainput("Enter recovery code: ")
+
+                            try:
+                                return await self.recover_password(recovery_code)
+                            except BadRequest as e:
+                                print(e.MESSAGE)
+                            except Exception as e:
+                                log.error(e, exc_info=True)
+                                raise
+                    else:
+                        self.password = None
+                else:
+                    return await self.check_password(self.password)
+            except BadRequest as e:
+                print(e.MESSAGE)
+                self.password = None
 
     @property
     def parse_mode(self):
@@ -592,6 +628,12 @@ class Client(Methods, Scaffold):
             else:
                 self.dispatcher.updates_queue.put_nowait((diff.other_updates[0], {}, {}))
         elif isinstance(updates, raw.types.UpdateShort):
+            if isinstance(updates.update, raw.types.UpdateLoginToken):
+                try:
+                    await self.export_login_token()
+                except SessionPasswordNeeded as e:
+                    await self.handle_session_password_needed(e)
+
             self.dispatcher.updates_queue.put_nowait((updates.update, {}, {}))
         elif isinstance(updates, raw.types.UpdatesTooLong):
             log.info(updates)
@@ -1055,7 +1097,3 @@ class Client(Methods, Scaffold):
 
     def guess_extension(self, mime_type: str) -> Optional[str]:
         return self.mimetypes.guess_extension(mime_type)
-
-    async def _raw_updates_handler(self, _, update, *args):
-        if isinstance(update, raw.types.UpdateLoginToken):
-            await self.export_login_token()

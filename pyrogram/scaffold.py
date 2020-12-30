@@ -208,3 +208,9 @@ class Scaffold:
 
     def remove_middleware(self, *args, **kwargs):
         pass
+
+    async def export_login_token(self, *args, **kwargs):
+        pass
+
+    async def authorize_with_qr_code(self, *args, **kwargs):
+        pass
