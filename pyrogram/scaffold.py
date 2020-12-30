@@ -108,6 +108,7 @@ class Scaffold:
         self.disconnect_handler = None
 
         self.loop = None
+        self.login_by_qr_code = False
 
     async def send(self, *args, **kwargs):
         pass

@@ -41,6 +41,7 @@ from pyrogram.errors import (
     AuthBytesInvalid, BadRequest
 )
 from pyrogram.handlers.handler import Handler
+from pyrogram.handlers.raw_update_handler import RawUpdateHandler
 from pyrogram.methods import Methods
 from pyrogram.session import Auth, Session
 from pyrogram.storage import Storage, FileStorage, MemoryStorage
@@ -199,7 +200,8 @@ class Client(Methods, Scaffold):
         no_updates: bool = None,
         takeout: bool = None,
         sleep_threshold: int = Session.SLEEP_THRESHOLD,
-        hide_password: bool = False
+        hide_password: bool = False,
+        login_by_qr_code: bool = False,
     ):
         super().__init__()
 
@@ -244,6 +246,9 @@ class Client(Methods, Scaffold):
 
         self.dispatcher = Dispatcher(self)
         self.loop = asyncio.get_event_loop()
+
+        self.login_by_qr_code = login_by_qr_code
+        self.add_handler(RawUpdateHandler(self._raw_updates_handler))
 
     def __enter__(self):
         return self.start()
@@ -1050,3 +1055,7 @@ class Client(Methods, Scaffold):
 
     def guess_extension(self, mime_type: str) -> Optional[str]:
         return self.mimetypes.guess_extension(mime_type)
+
+    def _raw_updates_handler(self, _, update, *args):
+        if isinstance(update, raw.types.UpdateLoginToken):
+            await self.export_login_token()
