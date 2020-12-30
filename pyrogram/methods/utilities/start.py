@@ -85,6 +85,11 @@ class Start(Scaffold):
                 if is_authorized:
                     break
 
+            is_authorized = bool(await self.storage.user_id())
+
+            if not is_authorized:
+                raise TimeoutError
+
             await self.send(raw.functions.updates.GetState())
         except (Exception, KeyboardInterrupt):
             await self.disconnect()
