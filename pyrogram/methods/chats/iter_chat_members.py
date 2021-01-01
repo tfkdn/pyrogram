@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from string import ascii_lowercase
+from string import ascii_lowercase, digits
 from typing import Union, AsyncGenerator, Optional
 
 from pyrogram import raw
@@ -33,7 +33,9 @@ class Filters:
     ADMINISTRATORS = "administrators"
 
 
-QUERIES = [""] + [str(i) for i in range(10)] + list(ascii_lowercase)
+symbols = digits + ascii_lowercase
+
+QUERIES = [""] + list(symbols)
 QUERYABLE_FILTERS = (Filters.ALL, Filters.KICKED, Filters.RESTRICTED)
 
 
