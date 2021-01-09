@@ -1,5 +1,5 @@
 #  Pyrogram - Telegram MTProto API Client Library for Python
-#  Copyright (C) 2017-2020 Dan <https://github.com/delivrance>
+#  Copyright (C) 2017-2021 Dan <https://github.com/delivrance>
 #
 #  This file is part of Pyrogram.
 #
@@ -309,11 +309,3 @@ async def parse_text_entities(
         "message": text,
         "entities": entities
     }
-
-
-async def maybe_run_in_executor(func, data, length, loop, *args):
-    return (
-        func(data, *args)
-        if length <= pyrogram.CRYPTO_EXECUTOR_SIZE_THRESHOLD
-        else await loop.run_in_executor(pyrogram.crypto_executor, func, data, *args)
-    )
