@@ -33,7 +33,7 @@ class Filters:
     ADMINISTRATORS = "administrators"
 
 
-symbols = digits + ascii_lowercase
+symbols = digits + ascii_lowercase + "ёзйхцчшщыэюя"
 
 QUERIES = [""] + list(symbols)
 QUERYABLE_FILTERS = (Filters.ALL, Filters.KICKED, Filters.RESTRICTED)

@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Callable
+from typing import Callable, Union
 
 import pyrogram
 from pyrogram.filters import Filter
@@ -25,7 +25,7 @@ from pyrogram.scaffold import Scaffold
 
 class OnDeletedMessages(Scaffold):
     def on_deleted_messages(
-        self=None,
+        self: Union[Filter, pyrogram.Client] = None,
         filters=None,
         group: int = 0
     ) -> callable:
