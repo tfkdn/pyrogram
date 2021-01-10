@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Callable, Union
+from typing import Callable, Union, Optional
 
 import pyrogram
 from pyrogram.filters import Filter
@@ -25,7 +25,7 @@ from pyrogram.scaffold import Scaffold
 
 class OnInlineQuery(Scaffold):
     def on_inline_query(
-        self: Union[Filter, pyrogram.Client] = None,
+        self=None,  # type: Union[Filter, pyrogram.Client]
         filters=None,
         group: int = 0
     ) -> callable:

@@ -25,7 +25,7 @@ from pyrogram.scaffold import Scaffold
 
 class OnDeletedMessages(Scaffold):
     def on_deleted_messages(
-        self: Union[Filter, pyrogram.Client] = None,
+        self=None,  # type: Union[Filter, pyrogram.Client]
         filters=None,
         group: int = 0
     ) -> callable:
