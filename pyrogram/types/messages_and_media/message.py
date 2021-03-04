@@ -733,6 +733,33 @@ class Message(Object, Update):
         else:
             return f"https://t.me/c/{utils.get_channel_id(self.chat.id)}/{self.message_id}"
 
+    async def get_media_group(self) -> List["types.Message"]:
+        """Bound method *get_media_group* of :obj:`~pyrogram.types.Message`.
+        
+        Use as a shortcut for:
+        
+        .. code-block:: python
+            client.get_media_group(
+                chat_id=message.chat.id,
+                message_id=message.message_id
+            )
+            
+        Example:
+            .. code-block:: python
+                message.get_media_group()
+                
+        Returns:
+            List of :obj:`~pyrogram.types.Message`: On success, a list of messages of the media group is returned.
+            
+        Raises:
+            ValueError: In case the passed message id doesn't belong to a media group.
+        """
+
+        return await self._client.get_media_group(
+            chat_id=self.chat.id,
+            message_id=self.message_id
+        )
+
     async def reply_text(
         self,
         text: str,
@@ -2800,7 +2827,7 @@ class Message(Object, Update):
             "types.ReplyKeyboardMarkup",
             "types.ReplyKeyboardRemove",
             "types.ForceReply"
-        ] = None
+        ] = object
     ) -> Union["types.Message", List["types.Message"]]:
         """Bound method *copy* of :obj:`~pyrogram.types.Message`.
 
@@ -2853,6 +2880,8 @@ class Message(Object, Update):
             reply_markup (:obj:`~pyrogram.types.InlineKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardMarkup` | :obj:`~pyrogram.types.ReplyKeyboardRemove` | :obj:`~pyrogram.types.ForceReply`, *optional*):
                 Additional interface options. An object for an inline keyboard, custom reply keyboard,
                 instructions to remove reply keyboard or to force a reply from the user.
+                If not specified, the original reply markup is kept.
+                Pass None to remove the reply markup.
 
         Returns:
             :obj:`~pyrogram.types.Message`: On success, the copied message is returned.
@@ -2875,7 +2904,7 @@ class Message(Object, Update):
                 disable_notification=disable_notification,
                 reply_to_message_id=reply_to_message_id,
                 schedule_date=schedule_date,
-                reply_markup=self.reply_markup or reply_markup
+                reply_markup=self.reply_markup if reply_markup is object else reply_markup
             )
         elif self.media:
             send_media = partial(
@@ -2884,7 +2913,7 @@ class Message(Object, Update):
                 disable_notification=disable_notification,
                 reply_to_message_id=reply_to_message_id,
                 schedule_date=schedule_date,
-                reply_markup=self.reply_markup or reply_markup
+                reply_markup=self.reply_markup if reply_markup is object else reply_markup
             )
 
             if self.photo:
