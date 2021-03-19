@@ -18,6 +18,7 @@
 
 from .middleware import Middleware
 from .on_callback_query import OnCallbackQuery
+from .on_chat_member_updated import OnChatMemberUpdated
 from .on_chosen_inline_result import OnChosenInlineResult
 from .on_deleted_messages import OnDeletedMessages
 from .on_disconnect import OnDisconnect
@@ -38,6 +39,7 @@ class Decorators(
     OnUserStatus,
     OnInlineQuery,
     OnPoll,
-    OnChosenInlineResult
+    OnChosenInlineResult,
+    OnChatMemberUpdated
 ):
     pass

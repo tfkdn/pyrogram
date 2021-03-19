@@ -193,7 +193,6 @@ def pyrogram_api():
             restrict_chat_member
             promote_chat_member
             set_administrator_title
-            export_chat_invite_link
             set_chat_photo
             delete_chat_photo
             set_chat_title
@@ -239,6 +238,21 @@ def pyrogram_api():
             block_user
             unblock_user
             get_common_chats
+        """,
+        invite_links="""
+        Invite Links
+            export_chat_invite_link
+            create_chat_invite_link
+            edit_chat_invite_link
+            revoke_chat_invite_link
+            delete_chat_invite_link
+            delete_all_chat_invite_links
+            get_chat_invite_link
+            get_chat_invite_link_members
+            get_chat_invite_link_members_count
+            get_chat_invite_links
+            get_chat_invite_links_count
+            get_chat_admins_with_invite_links
         """,
         contacts="""
         Contacts
@@ -334,8 +348,11 @@ def pyrogram_api():
             ChatPhoto
             ChatMember
             ChatPermissions
+            ChatInviteLink
+            ChatAdminWithInviteLinks
             ChatEvent
             ChatEventFilter
+            ChatMemberUpdated
             Dialog
             Restriction
         """,
@@ -360,6 +377,9 @@ def pyrogram_api():
             Poll
             PollOption
             Dice
+            VoiceChatStarted
+            VoiceChatEnded
+            VoiceChatMembersInvited
         """,
         bots_keyboard="""
         Bots & Keyboards
@@ -368,6 +388,7 @@ def pyrogram_api():
             ReplyKeyboardRemove
             InlineKeyboardMarkup
             InlineKeyboardButton
+            LoginUrl
             ForceReply
             CallbackQuery
             GameHighScore
