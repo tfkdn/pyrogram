@@ -803,6 +803,8 @@ class Message(Object, Update):
     ) -> "Message":
         """Bound method *reply_text* of :obj:`~pyrogram.types.Message`.
 
+        An alias exists as *reply*.
+
         Use as a shortcut for:
 
         .. code-block:: python
@@ -2607,6 +2609,8 @@ class Message(Object, Update):
     ) -> "Message":
         """Bound method *edit_text* of :obj:`~pyrogram.types.Message`.
 
+        An alias exists as *edit*.
+
         Use as a shortcut for:
 
         .. code-block:: python
@@ -2924,6 +2928,9 @@ class Message(Object, Update):
                         f"chat_id: {self.chat.id}, message_id: {self.message_id}")
         elif self.game and not await self._client.storage.is_bot():
             log.warning(f"Users cannot send messages with Game media type. "
+                        f"chat_id: {self.chat.id}, message_id: {self.message_id}")
+        elif self.empty:
+            log.warning(f"Empty messages cannot be copied. "
                         f"chat_id: {self.chat.id}, message_id: {self.message_id}")
         elif self.text:
             return await self._client.send_message(
