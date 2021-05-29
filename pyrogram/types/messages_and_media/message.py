@@ -19,9 +19,6 @@
 import logging
 from functools import partial
 from typing import List, Match, Union, BinaryIO, Optional
-import re
-from functools import cached_property, partial
-from typing import BinaryIO, List, Match, Union
 
 import pyrogram
 from pyrogram import raw
@@ -420,6 +417,7 @@ class Message(Object, Update):
         self.via_bot = via_bot
         self.outgoing = outgoing
         self.matches = matches
+        self.command = command
         self.reply_markup = reply_markup
         self.voice_chat_scheduled = voice_chat_scheduled
         self.voice_chat_started = voice_chat_started
@@ -774,31 +772,6 @@ class Message(Object, Update):
                     pass
 
             return parsed_message
-
-    @cached_property
-    def command(self) -> List[str]:
-        text = self.text or self.caption
-
-        if not text:
-            return []
-
-        pattern = r"(?i)^{}(?:\s|$)"
-        prefix = "/"
-
-        if not text.startswith('/'):
-            return []
-
-        without_prefix = text[len(prefix):]
-        without_prefix_split = without_prefix.split()
-
-        if not re.match(pattern.format(re.escape(without_prefix_split[0])), without_prefix):
-            return []
-
-        return without_prefix_split
-        # return [cmd] + [
-        #     re.sub(r"\\([\"'])", r"\1", m.group(2) or m.group(3) or "")
-        #     for m in command_re.finditer(without_prefix[len(cmd):])
-        # ]
 
     @property
     def link(self) -> str:
@@ -3235,7 +3208,7 @@ class Message(Object, Update):
             await self.reply(button, quote=quote)
 
     async def retract_vote(
-            self,
+        self,
     ) -> "types.Poll":
         """Bound method *retract_vote* of :obj:`~pyrogram.types.Message`.
 
