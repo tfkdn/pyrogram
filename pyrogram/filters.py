@@ -768,7 +768,7 @@ def command(commands: Union[str, List[str]], prefixes: Union[str, List[str]] = "
             Pass True if you want your command(s) to be case sensitive. Defaults to False.
             Examples: when True, command="Start" would trigger /Start but not /start.
     """
-    # command_re = re.compile(r"([\"'])(.*?)(?<!\\)\1|(\S+)")
+    command_re = re.compile(r"([\"'])(.*?)(?<!\\)\1|(\S+)")
 
     async def func(flt, client: pyrogram.Client, message: Message):
         # Username shared among all commands; used for mention commands, e.g.: /start@username
