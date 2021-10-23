@@ -77,11 +77,6 @@ class Session:
         is_media: bool = False,
         is_cdn: bool = False
     ):
-        if not Session.notice_displayed:
-            print(f"Pyrogram v{__version__}, {__copyright__}")
-            print(f"Licensed under the terms of the {__license__}", end="\n\n")
-            Session.notice_displayed = True
-
         self.client = client
         self.dc_id = dc_id
         self.auth_key = auth_key
