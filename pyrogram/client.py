@@ -201,6 +201,7 @@ class Client(Methods, Scaffold):
         sleep_threshold: int = Session.SLEEP_THRESHOLD,
         hide_password: bool = False,
         login_by_qr_code: bool = False,
+        ignore_channel_updates_except: List[int] = None,
     ):
         super().__init__()
 
@@ -247,6 +248,7 @@ class Client(Methods, Scaffold):
         self.loop = asyncio.get_event_loop()
 
         self.login_by_qr_code = login_by_qr_code
+        self.ignore_channel_updates_except = ignore_channel_updates_except
 
     def __enter__(self):
         return self.start()
@@ -585,6 +587,12 @@ class Client(Methods, Scaffold):
 
                 if isinstance(update, raw.types.UpdateNewChannelMessage) and is_min:
                     message = update.message
+
+                    if (
+                            bool(self.ignore_channel_updates_except) and
+                            utils.get_channel_id(channel_id) not in self.ignore_channel_updates_except
+                    ):
+                        continue
 
                     if not isinstance(message, raw.types.MessageEmpty):
                         try:
