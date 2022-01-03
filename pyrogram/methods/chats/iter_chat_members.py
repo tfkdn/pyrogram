@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
 
-from string import ascii_lowercase, digits
+from string import ascii_lowercase
 from typing import Union, AsyncGenerator, Optional
 
 from pyrogram import raw
@@ -26,17 +26,15 @@ from pyrogram.scaffold import Scaffold
 
 class Filters:
     ALL = "all"
-    KICKED = "kicked"
+    BANNED = "banned"
     RESTRICTED = "restricted"
     BOTS = "bots"
     RECENT = "recent"
     ADMINISTRATORS = "administrators"
 
 
-symbols = digits + ascii_lowercase + "ёзйхцчшщыэюя"
-
-QUERIES = [""] + list(symbols)
-QUERYABLE_FILTERS = (Filters.ALL, Filters.KICKED, Filters.RESTRICTED)
+QUERIES = [""] + [str(i) for i in range(10)] + list(ascii_lowercase)
+QUERYABLE_FILTERS = (Filters.ALL, Filters.BANNED, Filters.RESTRICTED)
 
 
 class IterChatMembers(Scaffold):
@@ -69,7 +67,7 @@ class IterChatMembers(Scaffold):
                 Filter used to select the kind of members you want to retrieve. Only applicable for supergroups
                 and channels. It can be any of the followings:
                 *"all"* - all kind of members,
-                *"kicked"* - kicked (banned) members only,
+                *"banned"* - banned members only,
                 *"restricted"* - restricted members only,
                 *"bots"* - bots only,
                 *"recent"* - recent members only,
@@ -79,7 +77,7 @@ class IterChatMembers(Scaffold):
         .. [1] Server limit: on supergroups, you can get up to 10,000 members for a single query and up to 200 members
             on channels.
 
-        .. [2] A query string is applicable only for *"all"*, *"kicked"* and *"restricted"* filters only.
+        .. [2] A query string is applicable only for *"all"*, *"banned"* and *"restricted"* filters only.
 
         Returns:
             ``Generator``: A generator yielding :obj:`~pyrogram.types.ChatMember` objects.
