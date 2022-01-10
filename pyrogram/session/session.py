@@ -1,5 +1,5 @@
 #  Pyrogram - Telegram MTProto API Client Library for Python
-#  Copyright (C) 2017-2021 Dan <https://github.com/delivrance>
+#  Copyright (C) 2017-present Dan <https://github.com/delivrance>
 #
 #  This file is part of Pyrogram.
 #
@@ -25,7 +25,6 @@ from hashlib import sha1
 from io import BytesIO
 
 import pyrogram
-from pyrogram import __copyright__, __license__, __version__
 from pyrogram import raw
 from pyrogram.connection import Connection
 from pyrogram.crypto import mtproto
@@ -53,8 +52,6 @@ class Session:
     MAX_RETRIES = 5
     ACKS_THRESHOLD = 8
     PING_INTERVAL = 5
-
-    notice_displayed = False
 
     def __init__(
         self,
