@@ -24,7 +24,11 @@ import pyrogram
 from pyrogram import raw
 from pyrogram import types
 from pyrogram import utils
-from pyrogram.errors import MessageIdsEmpty, PeerIdInvalid
+from pyrogram.errors import (
+    BadRequest,
+    MessageIdsEmpty,
+    PeerIdInvalid,
+)
 from pyrogram.parser import utils as parser_utils, Parser
 from ..object import Object
 from ..update import Update
@@ -567,6 +571,8 @@ class Message(Object, Update):
                     parsed_message.service = "pinned_message"
                 except MessageIdsEmpty:
                     pass
+                except BadRequest as e:
+                    log.warning(f'Unable to parse service message: {e}')
 
             if isinstance(action, raw.types.MessageActionGameScore):
                 parsed_message.game_high_score = types.GameHighScore._parse_action(client, message, users)
@@ -582,6 +588,8 @@ class Message(Object, Update):
                         parsed_message.service = "game_high_score"
                     except MessageIdsEmpty:
                         pass
+                    except BadRequest as e:
+                        log.warning(f'Unable to parse service message: {e}')
 
             return parsed_message
 
@@ -801,6 +809,8 @@ class Message(Object, Update):
                     )
                 except MessageIdsEmpty:
                     pass
+                except BadRequest as e:
+                    log.warning(f'Unable to parse reply_to message: {e}')
 
             return parsed_message
 
