@@ -214,7 +214,6 @@ class Client(Methods):
         takeout: bool = None,
         sleep_threshold: int = Session.SLEEP_THRESHOLD,
         hide_password: bool = False,
-        login_by_qr_code: bool = False,
         ignore_channel_updates_except: List[int] = None,
     ):
         super().__init__()
@@ -277,7 +276,6 @@ class Client(Methods):
 
         self.loop = asyncio.get_event_loop()
 
-        self.login_by_qr_code = login_by_qr_code
         self.ignore_channel_updates_except = ignore_channel_updates_except
 
     def __enter__(self):
@@ -381,41 +379,6 @@ class Client(Methods):
             await self.accept_terms_of_service(signed_in.id)
 
         return signed_up
-
-    async def authorize_with_qr_code(self, max_wait: int = 30):
-        if self.bot_token:
-            raise ValueError('This method can\'t be used by bots')
-
-        try:
-            is_authorized = await self.connect()
-        except ConnectionError:
-            is_authorized = bool(await self.storage.user_id())
-
-        try:
-            if not is_authorized:
-                current_timeout = 0
-
-                while current_timeout < max_wait:
-                    await asyncio.sleep(1)
-                    current_timeout += 1
-
-                    is_authorized = bool(await self.storage.user_id())
-
-                    if is_authorized:
-                        break
-
-                is_authorized = bool(await self.storage.user_id())
-
-                if not is_authorized:
-                    raise TimeoutError
-
-            await self.send(raw.functions.updates.GetState())
-        except (Exception, KeyboardInterrupt):
-            await self.disconnect()
-            raise
-        else:
-            await self.initialize()
-            return self
 
     async def handle_session_password_needed(self, e: SessionPasswordNeeded):
         print(e.MESSAGE)
@@ -603,12 +566,6 @@ class Client(Methods):
                 if diff.other_updates:  # The other_updates list can be empty
                     self.dispatcher.updates_queue.put_nowait((diff.other_updates[0], {}, {}))
         elif isinstance(updates, raw.types.UpdateShort):
-            if isinstance(updates.update, raw.types.UpdateLoginToken):
-                try:
-                    await self.export_login_token()
-                except SessionPasswordNeeded as e:
-                    await self.handle_session_password_needed(e)
-
             self.dispatcher.updates_queue.put_nowait((updates.update, {}, {}))
         elif isinstance(updates, raw.types.UpdatesTooLong):
             log.info(updates)

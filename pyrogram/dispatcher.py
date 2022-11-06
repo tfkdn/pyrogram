@@ -207,34 +207,33 @@ class Dispatcher:
 
         self.loop.create_task(fn())
 
-    def __prepare_middlewares(self) -> Iterator[Middleware]:
-        yield from reversed(self.middlewares)
+    async def handler_worker(self, lock):
+        while True:
+            packet = await self.updates_queue.get()
 
-    def add_middleware(self, middleware: Middleware):
-        async def fn():
-            for lock in self.locks_list:
-                await lock.acquire()
-
-            try:
-                self.middlewares.append(middleware)
-            finally:
-                for lock in self.locks_list:
-                    lock.release()
-
-        self.loop.create_task(fn())
-
-    def remove_middleware(self, middleware: Middleware):
-        async def fn():
-            for lock in self.locks_list:
-                await lock.acquire()
+            if packet is None:
+                break
 
             try:
-                self.middlewares.remove(middleware)
-            finally:
-                for lock in self.locks_list:
-                    lock.release()
+                update, users, chats = packet
+                parser = self.update_parsers.get(type(update), None)
 
-        self.loop.create_task(fn())
+                parsed_update, handler_type = (
+                    await parser(update, users, chats)
+                    if parser is not None
+                    else (None, type(None))
+                )
+
+                async with lock:
+                    if bool(parsed_update) and bool(self.__middlewares_handlers):
+                        await self.handle_update_with_middlewares(parsed_update, handler_type)
+                    else:
+                        await self.handle_update(update, parsed_update, handler_type, users, chats)
+
+            except pyrogram.StopPropagation:
+                pass
+            except Exception as e:
+                log.error(e, exc_info=True)
 
     async def handle_update(self, update, parsed_update, handler_type, users, chats):
         for group in self.groups.values():
@@ -272,6 +271,35 @@ class Dispatcher:
 
                 break
 
+    def __prepare_middlewares(self) -> Iterator[Middleware]:
+        yield from reversed(self.middlewares)
+
+    def add_middleware(self, middleware: Middleware):
+        async def fn():
+            for lock in self.locks_list:
+                await lock.acquire()
+
+            try:
+                self.middlewares.append(middleware)
+            finally:
+                for lock in self.locks_list:
+                    lock.release()
+
+        self.loop.create_task(fn())
+
+    def remove_middleware(self, middleware: Middleware):
+        async def fn():
+            for lock in self.locks_list:
+                await lock.acquire()
+
+            try:
+                self.middlewares.remove(middleware)
+            finally:
+                for lock in self.locks_list:
+                    lock.release()
+
+        self.loop.create_task(fn())
+
     async def handle_update_with_middlewares(self, parsed_update, handler_type):
         async def fn(*_, **__):
             return await self.handle_update(None, parsed_update, handler_type, None, None)
@@ -282,36 +310,3 @@ class Dispatcher:
             call_next = update_wrapper(partial(m, call_next=call_next), call_next)
 
         return await call_next(self.client, parsed_update)
-
-    async def handler_worker(self, lock):
-        while True:
-            packet = await self.updates_queue.get()
-
-            if packet is None:
-                break
-
-            try:
-                update, users, chats = packet
-                parser = self.update_parsers.get(type(update), None)
-
-                try:
-                    parsed_update, handler_type = (
-                        await parser(update, users, chats)
-                        if parser is not None
-                        else (None, type(None))
-                    )
-                except KeyError as e:
-                    log.error(f"{e.__class__.__name__} {e}: Update: {type(update)} Users: {users} Chats: {chats}")
-                    continue
-
-                async with lock:
-                    # TODO: Add support for RawUpdateHandler
-                    if bool(parsed_update) and bool(self.__middlewares_handlers):
-                        await self.handle_update_with_middlewares(parsed_update, handler_type)
-                    else:
-                        await self.handle_update(update, parsed_update, handler_type, users, chats)
-
-            except pyrogram.StopPropagation:
-                continue
-            except Exception as e:
-                log.error(e, exc_info=True)
