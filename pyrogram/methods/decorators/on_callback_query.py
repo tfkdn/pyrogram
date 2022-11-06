@@ -20,15 +20,14 @@ from typing import Callable, Union
 
 import pyrogram
 from pyrogram.filters import Filter
-from pyrogram.scaffold import Scaffold
 
 
-class OnCallbackQuery(Scaffold):
+class OnCallbackQuery:
     def on_callback_query(
         self=None,  # type: Union[Filter, pyrogram.Client]
         filters=None,
         group: int = 0
-    ) -> callable:
+    ) -> Callable:
         """Decorator for handling callback queries.
 
         This does the same thing as :meth:`~pyrogram.Client.add_handler` using the

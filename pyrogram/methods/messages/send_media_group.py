@@ -19,21 +19,22 @@
 import logging
 import os
 import re
+from datetime import datetime
 from typing import Union, List
 
+import pyrogram
 from pyrogram import raw
 from pyrogram import types
 from pyrogram import utils
 from pyrogram.file_id import FileType
-from pyrogram.scaffold import Scaffold
 
 log = logging.getLogger(__name__)
 
 
-class SendMediaGroup(Scaffold):
+class SendMediaGroup:
     # TODO: Add progress parameter
     async def send_media_group(
-        self,
+        self: "pyrogram.Client",
         chat_id: Union[int, str],
         media: List[Union[
             "types.InputMediaPhoto",
@@ -43,10 +44,12 @@ class SendMediaGroup(Scaffold):
         ]],
         disable_notification: bool = None,
         reply_to_message_id: int = None,
-        schedule_date: int = None,
+        schedule_date: datetime = None,
         protect_content: bool = None,
     ) -> List["types.Message"]:
         """Send a group of photos or videos as an album.
+
+        .. include:: /_includes/usable-by/users-bots.rst
 
         Parameters:
             chat_id (``int`` | ``str``):
@@ -64,8 +67,8 @@ class SendMediaGroup(Scaffold):
             reply_to_message_id (``int``, *optional*):
                 If the message is a reply, ID of the original message.
 
-            schedule_date (``int``, *optional*):
-                Date when the message will be automatically sent. Unix time.
+            schedule_date (:py:obj:`~datetime.datetime`, *optional*):
+                Date when the message will be automatically sent.
 
             protect_content (``bool``, *optional*):
                 Protects the contents of the sent message from forwarding and saving.
@@ -78,7 +81,7 @@ class SendMediaGroup(Scaffold):
 
                 from pyrogram.types import InputMediaPhoto, InputMediaVideo
 
-                app.send_media_group(
+                await app.send_media_group(
                     "me",
                     [
                         InputMediaPhoto("photo1.jpg"),
@@ -93,7 +96,7 @@ class SendMediaGroup(Scaffold):
             if isinstance(i, types.InputMediaPhoto):
                 if isinstance(i.media, str):
                     if os.path.isfile(i.media):
-                        media = await self.send(
+                        media = await self.invoke(
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaUploadedPhoto(
@@ -110,7 +113,7 @@ class SendMediaGroup(Scaffold):
                             )
                         )
                     elif re.match("^https?://", i.media):
-                        media = await self.send(
+                        media = await self.invoke(
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaPhotoExternal(
@@ -129,7 +132,7 @@ class SendMediaGroup(Scaffold):
                     else:
                         media = utils.get_input_media_from_file_id(i.media, FileType.PHOTO)
                 else:
-                    media = await self.send(
+                    media = await self.invoke(
                         raw.functions.messages.UploadMedia(
                             peer=await self.resolve_peer(chat_id),
                             media=raw.types.InputMediaUploadedPhoto(
@@ -148,7 +151,7 @@ class SendMediaGroup(Scaffold):
             elif isinstance(i, types.InputMediaVideo):
                 if isinstance(i.media, str):
                     if os.path.isfile(i.media):
-                        media = await self.send(
+                        media = await self.invoke(
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaUploadedDocument(
@@ -176,7 +179,7 @@ class SendMediaGroup(Scaffold):
                             )
                         )
                     elif re.match("^https?://", i.media):
-                        media = await self.send(
+                        media = await self.invoke(
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaDocumentExternal(
@@ -195,7 +198,7 @@ class SendMediaGroup(Scaffold):
                     else:
                         media = utils.get_input_media_from_file_id(i.media, FileType.VIDEO)
                 else:
-                    media = await self.send(
+                    media = await self.invoke(
                         raw.functions.messages.UploadMedia(
                             peer=await self.resolve_peer(chat_id),
                             media=raw.types.InputMediaUploadedDocument(
@@ -225,7 +228,7 @@ class SendMediaGroup(Scaffold):
             elif isinstance(i, types.InputMediaAudio):
                 if isinstance(i.media, str):
                     if os.path.isfile(i.media):
-                        media = await self.send(
+                        media = await self.invoke(
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaUploadedDocument(
@@ -252,7 +255,7 @@ class SendMediaGroup(Scaffold):
                             )
                         )
                     elif re.match("^https?://", i.media):
-                        media = await self.send(
+                        media = await self.invoke(
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaDocumentExternal(
@@ -271,7 +274,7 @@ class SendMediaGroup(Scaffold):
                     else:
                         media = utils.get_input_media_from_file_id(i.media, FileType.AUDIO)
                 else:
-                    media = await self.send(
+                    media = await self.invoke(
                         raw.functions.messages.UploadMedia(
                             peer=await self.resolve_peer(chat_id),
                             media=raw.types.InputMediaUploadedDocument(
@@ -300,7 +303,7 @@ class SendMediaGroup(Scaffold):
             elif isinstance(i, types.InputMediaDocument):
                 if isinstance(i.media, str):
                     if os.path.isfile(i.media):
-                        media = await self.send(
+                        media = await self.invoke(
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaUploadedDocument(
@@ -322,7 +325,7 @@ class SendMediaGroup(Scaffold):
                             )
                         )
                     elif re.match("^https?://", i.media):
-                        media = await self.send(
+                        media = await self.invoke(
                             raw.functions.messages.UploadMedia(
                                 peer=await self.resolve_peer(chat_id),
                                 media=raw.types.InputMediaDocumentExternal(
@@ -341,7 +344,7 @@ class SendMediaGroup(Scaffold):
                     else:
                         media = utils.get_input_media_from_file_id(i.media, FileType.DOCUMENT)
                 else:
-                    media = await self.send(
+                    media = await self.invoke(
                         raw.functions.messages.UploadMedia(
                             peer=await self.resolve_peer(chat_id),
                             media=raw.types.InputMediaUploadedDocument(
@@ -375,13 +378,13 @@ class SendMediaGroup(Scaffold):
                 )
             )
 
-        r = await self.send(
+        r = await self.invoke(
             raw.functions.messages.SendMultiMedia(
                 peer=await self.resolve_peer(chat_id),
                 multi_media=multi_media,
                 silent=disable_notification or None,
                 reply_to_msg_id=reply_to_message_id,
-                schedule_date=schedule_date,
+                schedule_date=utils.datetime_to_timestamp(schedule_date),
                 noforwards=protect_content
             ),
             sleep_threshold=60

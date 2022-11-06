@@ -18,13 +18,13 @@
 
 from typing import Union
 
+import pyrogram
 from pyrogram import raw
-from pyrogram.scaffold import Scaffold
 
 
-class SendInlineBotResult(Scaffold):
+class SendInlineBotResult:
     async def send_inline_bot_result(
-        self,
+        self: "pyrogram.Client",
         chat_id: Union[int, str],
         query_id: int,
         result_id: str,
@@ -33,6 +33,8 @@ class SendInlineBotResult(Scaffold):
     ):
         """Send an inline bot result.
         Bot results can be retrieved using :meth:`~pyrogram.Client.get_inline_bot_results`
+
+        .. include:: /_includes/usable-by/users.rst
 
         Parameters:
             chat_id (``int`` | ``str``):
@@ -59,9 +61,9 @@ class SendInlineBotResult(Scaffold):
         Example:
             .. code-block:: python
 
-                app.send_inline_bot_result(chat_id, query_id, result_id)
+                await app.send_inline_bot_result(chat_id, query_id, result_id)
         """
-        return await self.send(
+        return await self.invoke(
             raw.functions.messages.SendInlineBotResult(
                 peer=await self.resolve_peer(chat_id),
                 query_id=query_id,
