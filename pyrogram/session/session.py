@@ -117,7 +117,7 @@ class Session:
                                 app_version=self.client.app_version,
                                 device_model=self.client.device_model,
                                 system_version=self.client.system_version,
-                                system_lang_code=self.client.lang_code,
+                                system_lang_code=self.client.system_lang_code,
                                 lang_code=self.client.lang_code,
                                 lang_pack=self.client.lang_pack or "",
                                 query=raw.functions.help.GetConfig(),
@@ -130,7 +130,7 @@ class Session:
 
                 log.info(f"Session initialized: Layer {layer}")
                 log.info(f"Device: {self.client.device_model} - {self.client.app_version}")
-                log.info(f"System: {self.client.system_version} ({self.client.lang_code.upper()})")
+                log.info(f"System: {self.client.system_version} ({self.client.system_lang_code.upper()})")
 
             except AuthKeyDuplicated as e:
                 await self.stop()
