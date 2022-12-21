@@ -341,7 +341,10 @@ class Client(Methods):
             enums.SentCodeType.APP: "Telegram app",
             enums.SentCodeType.SMS: "SMS",
             enums.SentCodeType.CALL: "phone call",
-            enums.SentCodeType.FLASH_CALL: "phone flash call"
+            enums.SentCodeType.EMAIL: "Email",
+            enums.SentCodeType.FLASH_CALL: "phone flash call",
+            enums.SentCodeType.MISSED_CALL: "phone missed call",
+            enums.SentCodeType.SETUP_EMAIL_REQUIRED: "Email required to protect account",
         }
 
         print(f"The confirmation code has been sent via {sent_code_descriptions[sent_code.type]}")

@@ -37,3 +37,9 @@ class SentCodeType(AutoName):
 
     SMS = raw.types.auth.SentCodeTypeSms
     "The code was sent via SMS."
+
+    SETUP_EMAIL_REQUIRED = raw.types.auth.SentCodeTypeSetUpEmailRequired
+    "Email setup required to protect account"
+
+    EMAIL = raw.types.auth.SentCodeTypeEmailCode
+    "The code was sent via EMAIL."
