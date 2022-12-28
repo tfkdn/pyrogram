@@ -26,6 +26,7 @@ import re
 import shutil
 import sys
 from concurrent.futures.thread import ThreadPoolExecutor
+from datetime import datetime, timedelta
 from hashlib import sha256
 from importlib import import_module
 from io import StringIO, BytesIO
@@ -186,6 +187,9 @@ class Client(Methods):
     WORKERS = min(32, (os.cpu_count() or 0) + 4)  # os.cpu_count() can be None
     WORKDIR = PARENT_DIR
 
+    # Interval of seconds in which the updates watchdog will kick in
+    UPDATES_WATCHDOG_INTERVAL = 5 * 60
+
     mimetypes = MimeTypes()
     mimetypes.readfp(StringIO(mime_types))
 
@@ -227,8 +231,8 @@ class Client(Methods):
         self.app_version = app_version
         self.device_model = device_model
         self.system_version = system_version
+        self.lang_code = lang_code.lower()
         self.system_lang_code = system_lang_code
-        self.lang_code = lang_code
         self.lang_pack = lang_pack
         self.ipv6 = ipv6
         self.proxy = proxy
@@ -279,6 +283,13 @@ class Client(Methods):
 
         self.message_cache = Cache(10000)
 
+        # Sometimes, for some reason, the server will stop sending updates and will only respond to pings.
+        # This watchdog will invoke updates.GetState in order to wake up the server and enable it sending updates again
+        # after some idle time has been detected.
+        self.updates_watchdog_task = None
+        self.updates_watchdog_event = asyncio.Event()
+        self.last_update_time = datetime.now()
+
         self.loop = asyncio.get_event_loop()
 
         self.ignore_channel_updates_except = ignore_channel_updates_except
@@ -300,6 +311,18 @@ class Client(Methods):
             await self.stop()
         except ConnectionError:
             pass
+
+    async def updates_watchdog(self):
+        while True:
+            try:
+                await asyncio.wait_for(self.updates_watchdog_event.wait(), self.UPDATES_WATCHDOG_INTERVAL)
+            except asyncio.TimeoutError:
+                pass
+            else:
+                break
+
+            if datetime.now() - self.last_update_time > timedelta(seconds=self.UPDATES_WATCHDOG_INTERVAL):
+                await self.invoke(raw.functions.updates.GetState())
 
     async def authorize(self) -> User:
         if self.bot_token:
@@ -341,8 +364,9 @@ class Client(Methods):
             enums.SentCodeType.APP: "Telegram app",
             enums.SentCodeType.SMS: "SMS",
             enums.SentCodeType.CALL: "phone call",
-            enums.SentCodeType.EMAIL: "Email",
             enums.SentCodeType.FLASH_CALL: "phone flash call",
+            enums.SentCodeType.FRAGMENT_SMS: "Fragment SMS",
+            enums.SentCodeType.EMAIL: "Email",
             enums.SentCodeType.MISSED_CALL: "phone missed call",
             enums.SentCodeType.SETUP_EMAIL_REQUIRED: "Email required to protect account",
         }
@@ -413,7 +437,7 @@ class Client(Methods):
                             except BadRequest as e:
                                 print(e.MESSAGE)
                             except Exception as e:
-                                log.error(e, exc_info=True)
+                                log.exception(e)
                                 raise
                     else:
                         self.password = None
@@ -498,6 +522,8 @@ class Client(Methods):
         return is_min
 
     async def handle_updates(self, updates):
+        self.last_update_time = datetime.now()
+
         if isinstance(updates, (raw.types.Updates, raw.types.UpdatesCombined)):
             is_min = any((
                 await self.fetch_peers(updates.users),
@@ -682,11 +708,11 @@ class Client(Methods):
                     try:
                         module = import_module(module_path)
                     except ImportError:
-                        log.warning(f'[{self.name}] [LOAD] Ignoring non-existent module "{module_path}"')
+                        log.warning('[%s] [LOAD] Ignoring non-existent module "%s"', self.name, module_path)
                         continue
 
                     if "__path__" in dir(module):
-                        log.warning(f'[{self.name}] [LOAD] Ignoring namespace "{module_path}"')
+                        log.warning('[%s] [LOAD] Ignoring namespace "%s"', self.name, module_path)
                         continue
 
                     if handlers is None:
@@ -720,11 +746,11 @@ class Client(Methods):
                     try:
                         module = import_module(module_path)
                     except ImportError:
-                        log.warning(f'[{self.name}] [UNLOAD] Ignoring non-existent module "{module_path}"')
+                        log.warning('[%s] [UNLOAD] Ignoring non-existent module "%s"', self.name, module_path)
                         continue
 
                     if "__path__" in dir(module):
-                        log.warning(f'[{self.name}] [UNLOAD] Ignoring namespace "{module_path}"')
+                        log.warning('[%s] [UNLOAD] Ignoring namespace "%s"', self.name, module_path)
                         continue
 
                     if handlers is None:
@@ -751,7 +777,7 @@ class Client(Methods):
                 log.info('[{}] Successfully loaded {} plugin{} from "{}"'.format(
                     self.name, count, "s" if count > 1 else "", root))
             else:
-                log.warning(f'[{self.name}] No plugin loaded from "{root}"')
+                log.warning('[%s] No plugin loaded from "%s"', self.name, root)
 
     async def handle_download(self, packet):
         file_id, directory, file_name, in_memory, file_size, progress, progress_args = packet
@@ -983,7 +1009,10 @@ class Client(Methods):
                         # https://core.telegram.org/cdn#verifying-files
                         for i, h in enumerate(hashes):
                             cdn_chunk = decrypted_chunk[h.limit * i: h.limit * (i + 1)]
-                            CDNFileHashMismatch.check(h.hash == sha256(cdn_chunk).digest())
+                            CDNFileHashMismatch.check(
+                                h.hash == sha256(cdn_chunk).digest(),
+                                "h.hash == sha256(cdn_chunk).digest()"
+                            )
 
                         yield decrypted_chunk
 
@@ -1010,7 +1039,7 @@ class Client(Methods):
         except pyrogram.StopTransmission:
             raise
         except Exception as e:
-            log.error(e, exc_info=True)
+            log.exception(e)
 
     def guess_mime_type(self, filename: str) -> Optional[str]:
         return self.mimetypes.guess_type(filename)[0]

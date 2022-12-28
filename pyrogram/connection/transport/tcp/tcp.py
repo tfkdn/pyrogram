@@ -19,7 +19,6 @@
 import asyncio
 import logging
 import socket
-import time
 
 try:
     import python_socks
@@ -46,8 +45,8 @@ class TCP:
     def __init__(self, ipv6: bool, proxy: dict):
         self.socket = None
 
-        self.reader = None  # type: asyncio.StreamReader
-        self.writer = None  # type: asyncio.StreamWriter
+        self.reader = None
+        self.writer = None
 
         self.lock = asyncio.Lock()
         self.loop = asyncio.get_event_loop()
@@ -170,28 +169,26 @@ class TCP:
                 timeout=TCP.TIMEOUT
             )
 
+        # ??
         await self.writer.drain()
 
     async def close(self):
         try:
-            self.writer.close()
-            await asyncio.wait_for(self.writer.wait_closed(), timeout=10)
-        except AttributeError as e:
-            if bool(self.socket):
-                try:
-                    self.socket.shutdown(socket.SHUT_RDWR)
-                except OSError:
-                    pass
-                finally:
-                    # A tiny sleep placed here helps avoiding .recv(n) hanging until the timeout.
-                    # This is a workaround that seems to fix the occasional delayed stop of a client.
-                    time.sleep(0.001)
-                    self.socket.close()
+            if self.writer is not None:
+                self.writer.close()
+                await asyncio.wait_for(self.writer.wait_closed(), TCP.TIMEOUT)
+        except Exception as e:
+            log.warning("Close exception: %s %s", type(e).__name__, e)
 
     async def send(self, data: bytes):
         async with self.lock:
-            self.writer.write(data)
-            await self.writer.drain()
+            try:
+                if self.writer is not None:
+                    self.writer.write(data)
+                    await self.writer.drain()
+            except Exception as e:
+                log.warning("Send exception: %s %s", type(e).__name__, e)
+                raise OSError(e)
 
     async def recv(self, length: int = 0):
         data = b""

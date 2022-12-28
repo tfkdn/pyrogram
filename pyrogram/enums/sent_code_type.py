@@ -43,3 +43,6 @@ class SentCodeType(AutoName):
 
     EMAIL = raw.types.auth.SentCodeTypeEmailCode
     "The code was sent via EMAIL."
+
+    FRAGMENT_SMS = raw.types.auth.SentCodeTypeFragmentSms
+    "The code was sent via Fragment SMS."
