@@ -15,28 +15,37 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
+from typing import Optional
 
-__version__ = "2.0.105"
-__license__ = "GNU Lesser General Public License v3.0 (LGPL-3.0)"
-__copyright__ = "Copyright (C) 2017-present Dan <https://github.com/delivrance>"
-
-from concurrent.futures.thread import ThreadPoolExecutor
+from pyrogram import raw
+from ..object import Object
 
 
-class StopTransmission(Exception):
-    pass
+class Username(Object):
+    """
+    User username info
 
+    Parameters:
+        username (``str``):
+            N/A
 
-class StopPropagation(StopAsyncIteration):
-    pass
+        editable (``bool``, *optional*):
+            N/A
 
+        active (``bool``, *optional*):
+            N/A
+    """
 
-class ContinuePropagation(StopAsyncIteration):
-    pass
+    def __init__(self, *, username: str, editable: Optional[bool] = None, active: Optional[bool] = None) -> None:
+        super().__init__(None)
+        self.username = username
+        self.editable = editable
+        self.active = active
 
-
-from . import raw, types, filters, handlers, emoji, enums, middleware
-from .client import Client
-from .sync import idle, compose
-
-crypto_executor = ThreadPoolExecutor(1, thread_name_prefix="CryptoWorker")
+    @staticmethod
+    def _parse(username: "raw.types.Username") -> "Username":
+        return Username(
+            username=username.username,
+            editable=username.editable,
+            active=username.active
+        )
