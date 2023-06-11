@@ -301,8 +301,8 @@ class Session:
                     error_code = -Int.read(BytesIO(packet))
 
                     log.warning(
-                        "Server sent transport error: %s (%s)",
-                        error_code, Session.TRANSPORT_ERRORS.get(error_code, "unknown error")
+                        "[%s] Server sent transport error: %s (%s)",
+                        self.client.name, error_code, Session.TRANSPORT_ERRORS.get(error_code, "unknown error")
                     )
 
                 if self.is_started.is_set():
