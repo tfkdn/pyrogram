@@ -303,13 +303,19 @@ class Session:
                     error_msg = "Server sent transport error: %s (%s)" % (error_code, Session.TRANSPORT_ERRORS.get(error_code, "unknown error"))
                     if error_code == 404:
                         try:
-                            await self.stop()
+                            await self.client.log_out()
                         except Exception:
-                            pass
+                            try:
+                                await self.stop()
+                            except Exception:
+                                pass
+                            finally:
+                                try:
+                                    await self.client.storage.delete()
+                                except Exception:
+                                    pass
                         raise Exception(error_msg)
-                    log.warning(
-                        error_msg
-                    )
+                    log.warning(error_msg)
 
                 if self.is_started.is_set():
                     self.loop.create_task(self.restart())
