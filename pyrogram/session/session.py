@@ -300,9 +300,15 @@ class Session:
                 if packet:
                     error_code = -Int.read(BytesIO(packet))
 
+                    error_msg = "Server sent transport error: %s (%s)" % (error_code, Session.TRANSPORT_ERRORS.get(error_code, "unknown error"))
+                    if error_code == 404:
+                        try:
+                            await self.stop()
+                        except Exception:
+                            pass
+                        raise Exception(error_msg)
                     log.warning(
-                        "[%s] Server sent transport error: %s (%s)",
-                        self.client.name, error_code, Session.TRANSPORT_ERRORS.get(error_code, "unknown error")
+                        error_msg
                     )
 
                 if self.is_started.is_set():
